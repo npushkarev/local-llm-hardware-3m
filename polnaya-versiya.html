@@ -161,7 +161,7 @@
           </table>
         </div>
         <p style="margin-top:12px"><strong>Чего нет в бюджете вообще.</strong> Доли ставки инженера на эксплуатацию. vLLM, драйверы, обновления моделей, мониторинг — это работа, а не разовая установка. Без неё железо простаивает, и <strong>разница между грамотным и неграмотным стеком на Spark достигает четырёх раз</strong> — см. раздел 14.</p>
-        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 16.</p>
+        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 18.</p>
       </div>
     </div>
 
@@ -981,8 +981,136 @@
     </div>
   </section>
 
+
   <section>
-    <h2><span class="n">15</span>Что требует ручного подтверждения</h2>
+    <h2><span class="n">15</span>Сколько чатов держит каждая сборка и на какой модели</h2>
+    <p>Предыдущие разделы считали пользователей «вообще». Здесь — по трём конкретным моделям, потому что ответ различается втрое в зависимости от того, что развёрнуто.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Модель</th><th class="r">Размер</th><th class="r">Тип</th><th class="r">Spark<br><span class="dim">генерация</span></th><th class="r">Strix Halo<br><span class="dim">генерация</span></th><th>Куда влезает</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Qwen3.8-27B</strong> Q4<br><span class="dim">мультимодальная, 262к контекста</span></td><td class="r mono">16,9 ГБ</td><td class="r dim">плотная 27,8B</td><td class="r mono">12,3</td><td class="r mono">12,8</td><td class="dim">во всё, включая одиночную 4090 на 48 ГБ</td></tr>
+          <tr class="hi"><td><strong>Laguna S 2.1</strong> Q4<br><span class="dim">1M контекста, TB 2.1 = 70,2</span></td><td class="r mono">71,2 ГБ</td><td class="r dim">MoE 118B/8B</td><td class="r mono">30,2</td><td class="r mono"><strong>40,0</strong></td><td class="dim">от 96 ГБ. Одиночная 4090 и RTX PRO 5000 не держат её вместе с кэшем контекста</td></tr>
+          <tr><td><strong>gpt-oss-120b</strong> MXFP4<br><span class="dim">TB 2.1 не сопоставим напрямую</span></td><td class="r mono">≈63 ГБ</td><td class="r dim">MoE 117B/5,1B</td><td class="r mono">33,5</td><td class="r dim">нет замера</td><td class="dim">от 72 ГБ. На RTX PRO 5000 — впритык, без запаса под контекст</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Генерация — одиночный поток, токенов в секунду. Qwen3.8 и Laguna замерены на нашем стенде, gpt-oss-120b — <a href="https://dendro-logic.com/engineering/nvidia-dgx-spark-concurrency-benchmark/">внешний замер</a> на том же железе.</p>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Как считалась ёмкость</h3>
+        <p>За один «чат» принят пользователь, получающий <strong>не менее 5 токенов в секунду</strong> — примерно скорость чтения человека. Опорная точка измерена: один Spark на gpt-oss-120b при 32 одновременных запросах отдаёт 7,95 т/с каждому, на плотной модели — 5,08. То есть <strong>32 одновременных чата на узел — это замер, а не оценка</strong>.</p>
+        <p>Остальные строки получены переносом: доля от опорной модели по одиночной генерации для Spark и Halo, множитель по полосе памяти для видеокарт. <strong>Числа по картам — расчёт, замеров по ним нет.</strong></p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка</th><th class="r">Qwen3.8-27B<br><span class="dim">лёгкая, плотная</span></th><th class="r">Laguna S 2.1<br><span class="dim">рабочая</span></th><th class="r">gpt-oss-120b<br><span class="dim">крупная MoE</span></th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>11 × мини-ПК Strix Halo</strong><br><span class="dim">2 893 000 ₽</span></td><td class="r mono">132</td><td class="r mono ok"><strong>418</strong></td><td class="r mono ok"><strong>462</strong> <span class="dim">оценка</span></td></tr>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ + хост</strong><br><span class="dim">2 535 000 ₽</span></td><td class="r mono ok"><strong>172</strong></td><td class="r mono">≈320 <span class="dim">через TP</span></td><td class="r mono">≈350 <span class="dim">через TP</span></td></tr>
+          <tr class="hi"><td><strong>RTX PRO 6000 + хост + Spark + Halo</strong><br><span class="dim">2 796 588 ₽</span></td><td class="r mono">101</td><td class="r mono">256</td><td class="r mono">284</td></tr>
+          <tr><td>RTX PRO 5000 + хост + 2 Spark<br><span class="dim">2 576 976 ₽</span></td><td class="r mono">82</td><td class="r mono stop">58 <span class="dim">только Spark</span></td><td class="r mono">222</td></tr>
+          <tr><td>RTX PRO 6000 + хост<br><span class="dim">1 950 000 ₽</span></td><td class="r mono">77</td><td class="r mono">189</td><td class="r mono">210</td></tr>
+          <tr><td>5 × DGX Spark<br><span class="dim">2 917 940 ₽</span></td><td class="r mono">60</td><td class="r mono">145</td><td class="r mono">160</td></tr>
+          <tr><td>4 × DGX Spark в кластере<br><span class="dim">2 334 352 ₽ + сеть</span></td><td class="r mono">48</td><td class="r mono">116</td><td class="r mono">128</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra<br><span class="dim">2 270 700 ₽</span></td><td class="r dim">нет замеров</td><td class="r dim">нет замеров</td><td class="r dim">нет замеров</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Одновременных собеседников при 5 т/с и более на человека. Для многоузловых сборок узлы работают независимыми репликами: каждый обслуживает своих пользователей. Кластер из четырёх Spark в этой таблице тоже посчитан репликами — единый пул нужен только под модели крупнее 128 ГБ, а все три модели здесь меньше.</p>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Три вывода, меняющие выбор</h3>
+        <p><strong>Первое: на чате компактные узлы выигрывают у карт.</strong> Одиннадцать мини-ПК Strix Halo держат 418 собеседников на Laguna против 189 у RTX PRO 6000 — вдвое больше за сопоставимые деньги. Причина в том, что чат упирается в генерацию и в суммарную полосу памяти всего парка, а не в вычислитель одного узла. Одиннадцать коробок дают 11 × 256 = 2816 ГБ/с суммарной полосы против 1792 у одной карты.</p>
+        <p><strong>Второе: плотная модель обходится втрое дороже.</strong> Qwen3.8-27B на 27,8 миллиарда параметров при каждом токене читает все веса, а Laguna при 118 миллиардах читает только 8 активных. Поэтому меньшая по размеру модель держит втрое меньше пользователей. <strong>Для многопользовательского чата плотные модели — плохой выбор независимо от железа.</strong></p>
+        <p><strong>Третье: у выбора модели есть цена в железе.</strong> Переход с Qwen3.8 на Laguna требует минимум 96 ГБ на узел — это отсекает одиночную 4090 и делает RTX PRO 5000 бесполезной под эту модель. Решение «какую модель разворачиваем» надо принимать до выбора железа, а не после.</p>
+      </div>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Чего эта таблица не говорит</h3>
+        <p>Ёмкость по чатам — не то же самое, что пригодность для агентов. Те же одиннадцать мини-ПК, лучшие в таблице выше, дают <strong>пятерых агентных пользователей против одиннадцати у карты</strong>: шаг агента на Halo — 5,7 минуты против 15,7 секунды. Разные нагрузки, обратный порядок сборок.</p>
+        <p>И числа по картам остаются расчётными. При 32 одновременных запросах на Spark замер есть; для RTX PRO 6000 на той же нагрузке — нет. <strong>Это входит в третью проверку.</strong></p>
+      </div>
+    </div>
+  </section>
+
+
+  <section>
+    <h2><span class="n">16</span>Пилот: локальный копилот и агент на имеющемся стенде</h2>
+    <p>Две из трёх проверок раздела 01 делаются без закупки. Ниже — что именно разворачивается, на чём и какие числа надо снять за две недели, чтобы решение перестало опираться на допущения.</p>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Три роли — три модели, а не одна на всё</h3>
+        <p>Главная ошибка пилота — поставить одну модель и мерить её на всех сценариях. Роли предъявляют противоположные требования: автодополнению нужна задержка в сотни миллисекунд, агенту — объём контекста, чату — пропускная способность.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Роль</th><th>Модель</th><th class="r">Замер на стенде</th><th>Что критично</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>Автодополнение в редакторе</strong><br><span class="dim">inline completion, FIM</span></td><td>Qwen3-Coder-30B-A3B Q6<br><span class="dim">24,5 ГиБ</span></td><td class="r mono"><strong>2004</strong> / 69,0</td><td class="dim">время до первого токена ниже 200 мс; контекст короткий, ответы в единицы строк. MoE с 3B активных — именно поэтому быстрая</td></tr>
+          <tr><td><strong>Чат по коду</strong><br><span class="dim">объяснить, отрефакторить</span></td><td>Qwen3.8-27B Q4<br><span class="dim">15,7 ГиБ</span></td><td class="r mono">835,6 / 12,3</td><td class="dim">262к контекста и работа с картинками; плотная, поэтому на многих пользователях дорога — см. раздел 15</td></tr>
+          <tr class="hi"><td><strong>Агент</strong><br><span class="dim">многошаговые задачи</span></td><td>Laguna S 2.1 Q4<br><span class="dim">66,3 ГиБ</span></td><td class="r mono">683,5 / 30,2</td><td class="dim">1M контекста; шаг определяется чтением истории. Кэш префикса обязателен</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Стек: один узел, три эндпоинта</h3>
+        <p>На стенде есть два Spark и мини-ПК Strix Halo — этого достаточно, чтобы поднять все три роли одновременно и не мешать друг другу:</p>
+        <ul>
+          <li><strong>Spark №1 — автодополнение.</strong> Самая чувствительная к задержке роль, ей нужен узел без соседей. vLLM с OpenAI-совместимым API.</li>
+          <li><strong>Spark №2 — агент.</strong> Laguna, <span class="mono">--enable-prefix-caching</span> обязательно: именно эта настройка определяет, будет шаг агента 3 минуты или 20 секунд.</li>
+          <li><strong>Мини-ПК Halo — чат.</strong> На генерации он быстрее Spark на треть, а короткие промпты чата не упираются в его слабое чтение контекста. Роль подобрана под сильную сторону платформы.</li>
+        </ul>
+        <p>Перед эндпоинтами — простой роутер, чтобы редактор и агент ходили по одному адресу и разводились по моделям. Клиент в редакторе — любое расширение с настраиваемым OpenAI-совместимым URL: одно для автодополнения, другое для чата.</p>
+        <p class="dim">Это ровно та схема, которую потом воспроизводит закупленная сборка: карта берёт на себя роль, чувствительную к задержке, компактные узлы — объём и фоновую работу.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Что снять за две недели</h3>
+        <p>Пилот нужен не чтобы «попробовать», а чтобы заменить шесть допущений этого документа на числа. Каждая строка ниже прямо влияет на выбор конфигурации:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Показатель</th><th>Как влияет на решение</th></tr></thead>
+            <tbody>
+              <tr class="hi"><td><strong>Гистограмма длины контекста</strong> в реальных запросах</td><td class="dim">весь документ построен на 120 тысячах токенов. Если на практике 20–30 тысяч — Strix Halo перестаёт быть непригодным для агентов, и конфигурация меняется целиком</td></tr>
+              <tr class="hi"><td><strong>Доля попаданий в кэш префикса</strong></td><td class="dim">единственная величина, способная сократить шаг агента в разы. При высокой доле дорогая карта может оказаться избыточной</td></tr>
+              <tr><td><strong>p95 времени до первого токена</strong> в автодополнении</td><td class="dim">порог пригодности задаёт владелец сервиса до теста, а не после</td></tr>
+              <tr><td><strong>p95 времени шага агента</strong></td><td class="dim">главный критерий сравнения Spark с картой</td></tr>
+              <tr><td><strong>Пиковое число одновременных запросов</strong></td><td class="dim">определяет, считать по таблице агентов или по таблице чатов — а это разный порядок сборок</td></tr>
+              <tr><td><strong>Доля принятых автодополнений</strong></td><td class="dim">единственная метрика, связывающая железо с пользой для бизнеса</td></tr>
+              <tr class="hi"><td><strong>Доля решённых реальных задач</strong> и квант, на котором качество ломается</td><td class="dim">на нашем наборе из 33 задач Laguna в Q4 решает 52%. На задачах заказчика число будет другим, и оно определяет, имеет ли смысл вся затея</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px"><strong>Пороговые значения задаёт владелец сервиса до начала теста.</strong> Иначе результат подгоняется под то, что получилось.</p>
+      </div>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Что пилот на стенде не покажет</h3>
+        <p>Стенда нет ни RTX PRO 6000, ни RTX PRO 5000, поэтому все числа по картам останутся расчётными. <strong>Это и есть третья проверка</strong>, и её нельзя закрыть своими силами — нужен демо-стенд поставщика или аренда.</p>
+        <p>Второе: пилот на двух узлах не покажет, как поведёт себя кластер из четырёх на моделях крупнее 128 ГБ. Если GLM-5.2 входит в требования, это отдельный тест на арендованной конфигурации.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">17</span>Что требует ручного подтверждения</h2>
     <div class="grid">
       <div class="card pad">
         <h3>Цены и поставка</h3>
@@ -1039,7 +1167,7 @@
 
 
   <section>
-    <h2><span class="n">16</span>Откуда взято каждое число</h2>
+    <h2><span class="n">18</span>Откуда взято каждое число</h2>
     <p>Каждая величина, на которую опирается решение, с указанием источника и статуса проверки. <span class="pill buy">подтверждено</span> — источник совпал с текстом; <span class="pill mb">исправлено</span> — источник разошёлся, текст выше уже приведён к источнику; <span class="pill no">не проверено</span> — внешнего подтверждения нет.</p>
 
     <h3 style="margin-top:24px">Железо</h3>
@@ -1172,7 +1300,7 @@
   </section>
 
   <footer>
-    <div>Расчёты: курс 84,54 ₽/$; электричество 7 ₽/кВт·ч, 8760 ч/год. Цены — рыночный снимок на 18.08.2026; не заменяют коммерческое предложение. Проверка каждой величины по источникам — раздел 15.</div>
+    <div>Расчёты: курс 84,54 ₽/$; электричество 7 ₽/кВт·ч, 8760 ч/год. Цены — рыночный снимок на 18.08.2026; не заменяют коммерческое предложение. Проверка каждой величины по источникам — раздел 18.</div>
     <div>Первичные спецификации: <a href="https://docs.nvidia.com/dgx/dgx-spark/hardware.html">NVIDIA DGX Spark</a> · <a href="https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000/">RTX PRO 6000</a> · <a href="https://www.nvidia.com/content/dam/en-zz/Solutions/products/workstations/professional-desktop-gpus/rtx-pro-6000-max-q/workstation-datasheet-blackwell-rtx-pro-6000-max-q-nvidia-3519233.pdf">RTX PRO 6000 Max-Q</a> · <a href="https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-5000/">RTX PRO 5000</a> · <a href="https://www.nvidia.com/en-us/data-center/a100/">NVIDIA A100</a> · <a href="https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html">AMD Strix Halo</a> · <a href="https://www.amd.com/en/products/processors/server/epyc/9005-series/amd-epyc-9755.html">AMD EPYC 9755</a> · <a href="https://www.apple.com/newsroom/2025/03/apple-unveils-new-mac-studio-the-most-powerful-mac-ever/">Apple Mac Studio</a>.</div>
     <div>Методика и замеры: <a href="https://vllm.ai/blog/2026-06-01-vllm-dgx-spark">vLLM: 1,9k prefill / 22–24 decode</a> · <a href="https://developer.nvidia.com/blog/how-nvidia-dgx-sparks-performance-enables-intensive-ai-tasks/">NVIDIA: gpt-oss на Spark</a> · <a href="https://github.com/ggml-org/llama.cpp/blob/master/benches/dgx-spark/dgx-spark.md">llama.cpp: DGX Spark</a> · <a href="https://github.com/ggml-org/llama.cpp/discussions/15396">llama.cpp: RTX PRO 6000</a> · <a href="https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/">vLLM Automatic Prefix Caching</a> · <a href="https://docs.nvidia.com/dgx/dgx-spark/spark-clustering.html">NVIDIA: кластер Spark</a> · <a href="https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.1/docs/compatibility/compatibilityryz/native_linux/native_linux_compatibility.html">AMD: ROCm 7.1</a>.</div>
     <div>Модели, бенчмарки и тарифы: <a href="https://huggingface.co/poolside/Laguna-S-2.1">Poolside Laguna S 2.1</a> · <a href="https://github.com/sudoingX/dgx-spark-laguna">Laguna на Spark</a> · <a href="https://huggingface.co/Qwen/Qwen3.6-35B-A3B">Qwen3.6-35B-A3B</a> · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash">DeepSeek-V4-Flash preview</a> · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731">DeepSeek-V4-Flash-0731</a> · <a href="https://www.tbench.ai/">Terminal-Bench</a> · <a href="https://api-docs.deepseek.com/quick_start/pricing">DeepSeek API pricing</a>.</div>
