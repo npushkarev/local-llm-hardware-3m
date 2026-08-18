@@ -161,7 +161,7 @@
           </table>
         </div>
         <p style="margin-top:12px"><strong>Чего нет в бюджете вообще.</strong> Доли ставки инженера на эксплуатацию. vLLM, драйверы, обновления моделей, мониторинг — это работа, а не разовая установка. Без неё железо простаивает, и <strong>разница между грамотным и неграмотным стеком на Spark достигает четырёх раз</strong> — см. раздел 14.</p>
-        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 18.</p>
+        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 19.</p>
       </div>
     </div>
 
@@ -982,8 +982,84 @@
   </section>
 
 
+
   <section>
-    <h2><span class="n">15</span>Сколько чатов держит каждая сборка и на какой модели</h2>
+    <h2><span class="n">15</span>RTX 4090 48 ГБ против RTX PRO 6000 против DGX Spark</h2>
+    <p>Три позиции, между которыми и происходит выбор. Всё остальное в этом документе — производные от их сравнения. Здесь они сведены в одну таблицу по узлам, а не по сборкам.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Показатель</th><th class="r">RTX 4090 48 ГБ<br><span class="dim">доработанная</span></th><th class="r">RTX PRO 6000<br><span class="dim">Blackwell WE</span></th><th class="r">DGX Spark<br><span class="dim">GB10</span></th></tr></thead>
+        <tbody>
+          <tr><td>Цена, безнал с НДС</td><td class="r mono">450 000 ₽</td><td class="r mono">1 550 000 ₽</td><td class="r mono">583 588 ₽</td></tr>
+          <tr><td>Память</td><td class="r mono">48 ГБ GDDR6X</td><td class="r mono">96 ГБ GDDR7</td><td class="r mono"><strong>128 ГБ</strong> LPDDR5X</td></tr>
+          <tr class="hi"><td><strong>Цена гигабайта</strong></td><td class="r mono">9 375 ₽</td><td class="r mono stop">16 146 ₽</td><td class="r mono ok"><strong>4 559 ₽</strong></td></tr>
+          <tr><td>Полоса памяти</td><td class="r mono">1008 ГБ/с</td><td class="r mono ok"><strong>1792 ГБ/с</strong></td><td class="r mono stop">273 ГБ/с</td></tr>
+          <tr class="hi"><td><strong>Цена за ГБ/с полосы</strong></td><td class="r mono ok"><strong>446 ₽</strong></td><td class="r mono">865 ₽</td><td class="r mono stop">2 138 ₽</td></tr>
+          <tr><td>Потребление</td><td class="r mono">450 Вт</td><td class="r mono stop">600 Вт</td><td class="r mono ok"><strong>140 Вт</strong></td></tr>
+          <tr><td>Полосы на ватт</td><td class="r mono">2,2 ГБ/с</td><td class="r mono ok"><strong>3,0 ГБ/с</strong></td><td class="r mono">1,9 ГБ/с</td></tr>
+          <tr><td>Гарантия</td><td class="r stop">нет: память перепаяна<br>сторонним производителем</td><td class="r ok">36 месяцев<br><span class="dim">по счёту юрлицу</span></td><td class="r ok">розничная</td></tr>
+          <tr><td>Стек</td><td class="r dim">CUDA, но модификация<br>вендором не поддержана</td><td class="r ok">CUDA, штатный</td><td class="r dim">CUDA; на llama.cpp<br>вчетверо хуже, чем на vLLM</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>На трёх моделях</th><th class="r">RTX 4090 48 ГБ</th><th class="r">RTX PRO 6000</th><th class="r">DGX Spark</th></tr></thead>
+        <tbody>
+          <tr><td colspan="4" class="dim" style="padding-top:14px"><strong>Qwen3.8-27B Q4</strong> — 16,9 ГБ, плотная 27,8B</td></tr>
+          <tr><td>Генерация, т/с</td><td class="r mono">45,6 <span class="dim">расчёт</span></td><td class="r mono ok"><strong>81,0</strong> <span class="dim">расчёт</span></td><td class="r mono stop">12,3 <span class="dim">замер</span></td></tr>
+          <tr><td>Одновременных чатов</td><td class="r mono">43</td><td class="r mono ok"><strong>77</strong></td><td class="r mono stop">12</td></tr>
+          <tr class="hi"><td><strong>₽ за собеседника</strong></td><td class="r mono ok"><strong>10 465 ₽</strong></td><td class="r mono">20 130 ₽</td><td class="r mono stop">48 632 ₽</td></tr>
+
+          <tr><td colspan="4" class="dim" style="padding-top:14px"><strong>Laguna S 2.1 Q4</strong> — 71,2 ГБ, MoE 118B/8B</td></tr>
+          <tr><td>Генерация, т/с</td><td class="r stop">не влезает</td><td class="r mono ok"><strong>198,2</strong> <span class="dim">расчёт</span></td><td class="r mono">30,2 <span class="dim">замер</span></td></tr>
+          <tr><td>Одновременных чатов</td><td class="r stop">—</td><td class="r mono ok"><strong>189</strong></td><td class="r mono">29</td></tr>
+          <tr class="hi"><td><strong>₽ за собеседника</strong></td><td class="r stop">—</td><td class="r mono ok"><strong>8 201 ₽</strong></td><td class="r mono">20 124 ₽</td></tr>
+
+          <tr><td colspan="4" class="dim" style="padding-top:14px"><strong>gpt-oss-120b</strong> — ≈63 ГБ, MoE 117B/5,1B</td></tr>
+          <tr><td>Генерация, т/с</td><td class="r stop">не влезает</td><td class="r mono ok"><strong>220,1</strong> <span class="dim">расчёт</span></td><td class="r mono">33,5 <span class="dim">замер</span></td></tr>
+          <tr><td>Одновременных чатов</td><td class="r stop">—</td><td class="r mono ok"><strong>210</strong></td><td class="r mono">32</td></tr>
+          <tr class="hi"><td><strong>₽ за собеседника</strong></td><td class="r stop">—</td><td class="r mono ok"><strong>7 381 ₽</strong></td><td class="r mono">18 237 ₽</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Генерация Spark — наш замер, кроме gpt-oss-120b, где взят внешний. Генерация карт получена масштабированием по полосе памяти от замера Spark: <strong>замеров по картам нет</strong>. «Не влезает» означает, что весов и кэша контекста не хватит в 48 ГБ.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Агентная работа, узел с обвязкой</th><th class="r">4 × 4090 + хост</th><th class="r">RTX PRO 6000 + хост</th><th class="r">1 × DGX Spark</th></tr></thead>
+        <tbody>
+          <tr><td>Стоимость</td><td class="r mono">2 535 000 ₽</td><td class="r mono">1 950 000 ₽</td><td class="r mono">583 588 ₽</td></tr>
+          <tr><td>Шаг агента, 120к контекста</td><td class="r mono ok"><strong>13,6 с</strong> <span class="dim">расчёт</span></td><td class="r mono">15,7 с <span class="dim">расчёт</span></td><td class="r mono stop">3,0 мин <span class="dim">замер</span></td></tr>
+          <tr><td>Агентных пользователей</td><td class="r mono ok"><strong>13</strong></td><td class="r mono">11</td><td class="r mono stop">1</td></tr>
+          <tr class="hi"><td><strong>₽ за агентного пользователя</strong></td><td class="r mono">195 000 ₽</td><td class="r mono ok"><strong>177 273 ₽</strong></td><td class="r mono stop">589 483 ₽</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Что читается из этих трёх таблиц</h3>
+        <p><strong>Каждая позиция выигрывает свою метрику, и они не пересекаются.</strong> Spark берёт цену гигабайта — 4 559 ₽ против 9 375 у 4090 и 16 146 у RTX PRO 6000, то есть <strong>вчетверо дешевле старшей карты</strong>. 4090 берёт цену полосы — 446 ₽ за гигабайт в секунду против 2 138 у Spark, то есть <strong>впятеро дешевле</strong>. RTX PRO 6000 не выигрывает ни то, ни другое, но единственная держит крупную модель на одной карте с гарантией.</p>
+        <p><strong>Отсюда прямое правило выбора.</strong> Платите за память — берите Spark. Платите за скорость — берите 4090. Нужно и то и другое в одном узле, с документами и без экзотики — RTX PRO 6000, и переплата за это составляет от 6 700 до 11 600 ₽ на каждый гигабайт.</p>
+        <p><strong>И неожиданное: по цене обслуженного собеседника RTX PRO 6000 дешевле Spark втрое.</strong> 8 201 ₽ против 20 124 на Laguna. Дорогая карта окупается на многопользовательской нагрузке, потому что полоса памяти делится между всеми одновременными запросами, а у Spark её всемеро меньше. Вывод «Spark дешевле» верен для памяти и неверен для пользователей.</p>
+      </div>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Три оговорки, без которых таблицами пользоваться нельзя</h3>
+        <p><strong>Замеров по картам нет.</strong> Все числа RTX 4090 и RTX PRO 6000 получены масштабированием по полосе памяти от замера на Spark. Полоса определяет генерацию довольно точно, но не определяет чтение контекста, а именно оно решает в агентных сценариях. <strong>Это и есть третья проверка из раздела 01.</strong></p>
+        <p><strong>4090 на 48 ГБ — не изделие NVIDIA.</strong> Официальная карта имеет 24 ГБ; 48 — сторонняя перепайка памяти. Гарантии производителя нет, поведение после обновления драйвера не гарантировано, закрывающие документы для бухгалтерии проблемны. Разбор — в разделе 13.</p>
+        <p><strong>Spark сравнивается не только с картами.</strong> Его сильная сторона — не в этой таблице, а в разделе 14: два узла с линком 200 Гбит/с дают <strong>единый пул на 256 ГБ</strong>, четыре — на 512. Ни одна карта в бюджете этого не даёт, и именно поэтому Spark остаётся в рекомендации, несмотря на худшие показатели во всех трёх таблицах выше.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">16</span>Сколько чатов держит каждая сборка и на какой модели</h2>
     <p>Предыдущие разделы считали пользователей «вообще». Здесь — по трём конкретным моделям, потому что ответ различается втрое в зависимости от того, что развёрнуто.</p>
 
     <div class="card scroller">
@@ -1043,7 +1119,7 @@
 
 
   <section>
-    <h2><span class="n">16</span>Пилот: локальный копилот и агент на имеющемся стенде</h2>
+    <h2><span class="n">17</span>Пилот: локальный копилот и агент на имеющемся стенде</h2>
     <p>Две из трёх проверок раздела 01 делаются без закупки. Ниже — что именно разворачивается, на чём и какие числа надо снять за две недели, чтобы решение перестало опираться на допущения.</p>
 
     <div class="card verdict ok">
@@ -1110,7 +1186,7 @@
   </section>
 
   <section>
-    <h2><span class="n">17</span>Что требует ручного подтверждения</h2>
+    <h2><span class="n">18</span>Что требует ручного подтверждения</h2>
     <div class="grid">
       <div class="card pad">
         <h3>Цены и поставка</h3>
@@ -1167,7 +1243,7 @@
 
 
   <section>
-    <h2><span class="n">18</span>Откуда взято каждое число</h2>
+    <h2><span class="n">19</span>Откуда взято каждое число</h2>
     <p>Каждая величина, на которую опирается решение, с указанием источника и статуса проверки. <span class="pill buy">подтверждено</span> — источник совпал с текстом; <span class="pill mb">исправлено</span> — источник разошёлся, текст выше уже приведён к источнику; <span class="pill no">не проверено</span> — внешнего подтверждения нет.</p>
 
     <h3 style="margin-top:24px">Железо</h3>
