@@ -1,0 +1,1056 @@
+<title>Три миллиона на инференс</title>
+<style>
+  :root {
+    --paper:     #fbfaf7;
+    --card:      #ffffff;
+    --card-alt:  #f2efe9;
+    --ink:       #1a1815;
+    --ink-soft:  #55504a;
+    --ink-faint: #8a837a;
+    --rule:      #ddd7cc;
+    --rule-soft: #ebe6dc;
+    --gold:      #8a6a1f;
+    --gold-bg:   #f8f0da;
+    --ok:        #2c6b45;
+    --warn:      #9a6212;
+    --stop:      #a1362b;
+    --shadow:    0 1px 2px rgba(40,32,20,.05), 0 10px 28px -20px rgba(40,32,20,.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#14130f; --card:#1c1a16; --card-alt:#24211c; --ink:#ece7dd;
+      --ink-soft:#a9a296; --ink-faint:#7a736a; --rule:#322e27; --rule-soft:#272420;
+      --gold:#d9ad55; --gold-bg:#2b2313; --ok:#6fbf8d; --warn:#d5a04a; --stop:#e08579;
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px -22px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#14130f; --card:#1c1a16; --card-alt:#24211c; --ink:#ece7dd;
+    --ink-soft:#a9a296; --ink-faint:#7a736a; --rule:#322e27; --rule-soft:#272420;
+    --gold:#d9ad55; --gold-bg:#2b2313; --ok:#6fbf8d; --warn:#d5a04a; --stop:#e08579;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px -22px rgba(0,0,0,.9);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         font-size:16px; line-height:1.65; -webkit-font-smoothing:antialiased; }
+  .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+          font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width:1000px; margin:0 auto; padding:52px 22px 100px;
+          display:flex; flex-direction:column; gap:44px; }
+
+  header.mast { display:flex; flex-direction:column; gap:16px; }
+  .kicker { font-family: ui-monospace, Menlo, monospace; font-size:11.5px;
+            letter-spacing:.18em; text-transform:uppercase; color:var(--gold); }
+  h1 { margin:0; font-size:clamp(36px,6.5vw,62px); line-height:1.03;
+       letter-spacing:-.032em; font-weight:700; text-wrap:balance; }
+  .lede { margin:0; max-width:64ch; font-size:18px; color:var(--ink-soft); }
+  .strip { display:flex; flex-wrap:wrap; margin-top:8px; border:1px solid var(--rule);
+           border-radius:4px; overflow:hidden; background:var(--card); }
+  .strip div { padding:14px 20px; border-right:1px solid var(--rule); flex:1; min-width:150px; }
+  .strip div:last-child { border-right:none; }
+  .strip dt { font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+              color:var(--ink-faint); margin:0 0 4px; font-family:ui-monospace,Menlo,monospace; }
+  .strip dd { margin:0; font-size:21px; font-weight:650; letter-spacing:-.01em;
+              font-variant-numeric:tabular-nums; }
+
+  section { display:flex; flex-direction:column; gap:18px; }
+  h2 { margin:0; font-size:26px; letter-spacing:-.02em; font-weight:680; text-wrap:balance; }
+  h2 .n { color:var(--gold); font-family:ui-monospace,Menlo,monospace; font-size:15px;
+          margin-right:10px; letter-spacing:0; }
+  h3 { margin:0 0 4px; font-size:17px; font-weight:640; letter-spacing:-.01em; }
+  p { margin:0; max-width:72ch; }
+  p + p { margin-top:12px; }
+
+  .card { background:var(--card); border:1px solid var(--rule); border-radius:5px;
+          box-shadow:var(--shadow); }
+  .pad { padding:22px 24px; }
+  .verdict { border-left:4px solid var(--gold); }
+  .verdict.stop { border-left-color:var(--stop); }
+  .verdict.ok { border-left-color:var(--ok); }
+  .verdict .pad { display:flex; flex-direction:column; gap:10px; }
+  .verdict p { color:var(--ink-soft); }
+  .verdict strong { color:var(--ink); font-weight:640; }
+
+  .scroller { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14.5px; font-variant-numeric:tabular-nums; }
+  th { text-align:left; font-family:ui-monospace,Menlo,monospace; font-size:11px;
+       letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); font-weight:500;
+       padding:12px 16px; background:var(--card-alt); border-bottom:1px solid var(--rule);
+       white-space:nowrap; }
+  td { padding:12px 16px; border-bottom:1px solid var(--rule-soft); vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  td.k { font-family:ui-monospace,Menlo,monospace; font-size:13px; white-space:nowrap; }
+  td.r { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.dim, .dim { color:var(--ink-soft); }
+  tr.hi td { background:var(--gold-bg); }
+  tr.total td { font-weight:680; border-top:2px solid var(--rule); }
+
+  .bar { display:flex; align-items:center; gap:10px; min-width:180px; }
+  .bar-track { flex:1; height:8px; background:var(--card-alt); border-radius:4px;
+               overflow:hidden; border:1px solid var(--rule-soft); }
+  .bar-fill { height:100%; background:var(--gold); }
+  .bar-fill.low { background:var(--ink-faint); }
+  .bar span { font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--ink-soft);
+              min-width:66px; text-align:right; }
+
+  .pill { display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:10.5px;
+          letter-spacing:.05em; padding:2px 8px; border-radius:3px; border:1px solid currentColor;
+          white-space:nowrap; }
+  .pill.buy { color:var(--ok); } .pill.mb { color:var(--warn); } .pill.no { color:var(--stop); }
+  .ok { color:var(--ok); }
+  .stop { color:var(--stop); }
+
+  ul { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;
+       color:var(--ink-soft); max-width:72ch; }
+  li strong { color:var(--ink); font-weight:640; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .price { font-family:ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums;
+           font-size:15px; font-weight:600; color:var(--gold); }
+
+  footer { border-top:1px solid var(--rule); padding-top:22px; font-size:13px;
+           color:var(--ink-faint); display:flex; flex-direction:column; gap:8px; }
+  footer a, section a { color:var(--ink-soft); text-underline-offset:2px; }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="kicker">Обоснование закупки · 18 августа 2026 · курс 84,54 ₽/$</div>
+    <h1>Три миллиона на локальный LLM-инференс</h1>
+    <p class="lede">Решение для руководства: что покупать под локальных агентов, что даёт каждая сборка на этот бюджет и какие числа подтверждены замерами на живом железе, а какие остаются расчётом.</p>
+    <dl class="strip">
+      <div><dt>Бюджет</dt><dd>3 000 000 ₽</dd></div>
+      <div><dt>Эквивалент</dt><dd>≈ $35 486</dd></div>
+      <div><dt>Рекомендация</dt><dd>карта + Spark + 2 Halo</dd></div>
+      <div><dt>Критерий</dt><dd>шаг агента и число людей</dd></div>
+    </dl>
+  </header>
+
+  <!-- 01 -->
+  <section>
+    <h2><span class="n">01</span>Решение на одной странице</h2>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Рекомендация: смешанная сборка — карта, Spark и две коробки Strix Halo</h3>
+        <p><strong>Что покупать: <span class="mono">2 928 000 ₽</span></strong> — смешанная сборка из трёх типов узлов: RTX PRO 6000 Blackwell Workstation с хостом (1 550 000 + 400 000 ₽), один DGX Spark (520 000 ₽) и два мини-ПК на Strix Halo (458 000 ₽). Итого 480 ГБ памяти, остаток 72 000 ₽. Цены сняты с площадки вручную 18 августа и приведены к безналичному расчёту с НДС.</p>
+        <p><strong>Почему смесь, а не однородная сборка.</strong> Три платформы сильны в разном: карта даёт отклик в секундах, Spark — объём и быстрое чтение длинного контекста, мини-ПК Halo — самую дешёвую память (1 789 ₽/ГБ против 16 100 у карты) и быструю генерацию. При той же цене смесь даёт на 128 ГБ больше и на четверых больше чат-пользователей, чем сборка «карта плюс два Spark». Разбор всех вариантов — в разделе 13.</p>
+        <p><strong>Цена этого решения</strong> — три стека в эксплуатации: CUDA на карте и Spark, ROCm на Halo. Это нагрузка на инженера, и в бюджете она не учтена.</p>
+        <p><strong>На скольких человек это делится:</strong> около 13 сотрудников в агентной работе или 79 в чате — при условии, что счёт идёт от пропускной способности без кэширования префикса, то есть по нижней границе. Если основной сценарий — чат, а не агенты, порядок сборок меняется, и решение стоит пересмотреть по таблице в разделе 13.</p>
+        <p><strong>Чего это решение не даёт.</strong> Модели уровня GLM-5.2 (406–465 ГБ) не запустятся: под них нужны минимум четыре Spark, и время шага там измеряется минутами, а не секундами. Если такие модели входят в требования — конфигурация меняется целиком, и это первый вопрос, который надо задать заказчику.</p>
+        <p><strong>Единственное, что осталось проверить перед заказом:</strong> сравнительный тест RTX PRO 6000. Все прочие сравнения уже сделаны на собственном стенде (см. ниже), но такой карты на нём нет, и её показатели в статье — расчётные. Нужен временный доступ через поставщика, аренду или демо-стенд. <strong>Заказ карты до этого теста не обоснован.</strong></p>
+        <p class="dim">Все рублёвые суммы — минимум из найденной розницы на 18 августа 2026 и не заменяют коммерческое предложение; вторичный рынок подтверждению не поддаётся. Источник каждой цифры — раздел 15.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Часть проверки уже сделана: доступен рабочий стенд</h3>
+        <p>В распоряжении автора есть собранный контур из <strong>двух DGX Spark</strong> и <strong>мини-ПК на Strix Halo с дискретной RTX 4070 Ti</strong>. Замеры в разделе 12 сняты на нём, а не взяты из публикаций: 35 прогонов <span class="mono">llama-bench</span> и 24 прогона на собственном наборе задач.</p>
+        <p>Практическое следствие для решения: <strong>пилот «Spark против компактной альтернативы» проводить не нужно — он уже проведён</strong>, и его результат в разделе 12. Стенд закрывает вопросы «сколько на самом деле даёт GB10 против AMD», «что меняет квантование» и «складывается ли полоса при двух узлах». Он <em>не</em> закрывает единственный оставшийся вопрос — сравнение с RTX PRO 6000, потому что такой карты на стенде нет. Именно на этот тест и нужен временный доступ.</p>
+        <p><strong>Стенд доступен и дальше — на нём можно предварительно проверить гипотезы до того, как компания потратит хоть рубль.</strong> Что снимается на нём в течение дня-двух и без закупки:</p>
+        <ul>
+          <li><strong>Реальные модели заказчика на реальных данных.</strong> Не бенчмарк, а тот набор задач, ради которого затевается закупка: сколько из них локальная модель решает и на каком кванте качество перестаёт падать.</li>
+          <li><strong>Профиль нагрузки.</strong> Какой на самом деле контекст в рабочих запросах — 30 тысяч токенов или 120. От этого напрямую зависит, побеждает Spark или видеокарта, а сейчас это допущение, а не факт.</li>
+          <li><strong>Выигрыш от кэширования префикса.</strong> Единственная величина, способная поменять выводы про время шага в разы. Меряется на имеющемся железе.</li>
+          <li><strong>Сколько людей узел тянет одновременно.</strong> Числа в разделе 13 посчитаны, а не замерены; нагрузочный тест на двух Spark даст фактическую кривую.</li>
+          <li><strong>Эксплуатационная сторона.</strong> Стек, обновления, ARM64-образы, поведение под длительной нагрузкой — всё это уже работает и может быть показано вживую.</li>
+        </ul>
+        <p>Чего стенд не даёт: сравнения с RTX PRO 6000 и с RTX PRO 5000 — таких карт на нём нет. <strong>Это и есть единственная позиция, под которую нужен временный доступ или демо-стенд поставщика.</strong></p>
+        <p class="dim">Стенд — личное оборудование, не актив компании; здесь он выступает источником данных и площадкой для предварительной проверки, а не частью предлагаемой закупки.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Когда вместо этого нужна RTX PRO 6000</h3>
+        <p>Если доминируют короткий чат, плотные модели, длинная генерация или много одновременных пользователей одной модели, предпочтительнее один мощный CUDA-узел с RTX PRO 6000 Blackwell. Ценовой сценарий, а не готовая смета: карта 1 699 999 ₽ + нерасшифрованная оценка хоста 400 000 ₽ = <span class="mono">2 099 999 ₽</span>. UPS, сеть и ввод в эксплуатацию не оценены.</p>
+        <p>В розничных ценах связка «один Spark + RTX-узел» стоит <span class="mono">2 683 587 ₽</span>, нераспределённый остаток — 316 413 ₽. Через вторичный рынок за те же деньги берутся два Spark вместо одного: <span class="mono">2 899 999 ₽</span>, остаток 100 001 ₽. Оба варианта помещаются в лимит только если полные КП с инфраструктурой не превысят запас.</p>
+        <p>Без профиля реальной нагрузки безусловная закупка на все 3 млн ₽ не обоснована. Решение между Spark и RTX должно приниматься по времени до первого токена и межтокенной задержке для 95% запросов, а также по числу завершённых агентных шагов в час. Ценовые сценарии ниже трактуют 3 млн ₽ как закупочный бюджет; если это лимит полной стоимости владения за три года, нужна новая смета.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Нагрузка</th><th>Основной кандидат</th><th>Почему</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>Агенты 30–120k; рабочий набор не помещается в 96 ГБ</strong><br><span class="dim">но помещается в Spark с запасом памяти</span></td><td>Spark</td><td class="dim">замерено на стенде: втрое быстрее AMD на чтении контекста при том же объёме памяти</td></tr>
+          <tr><td><strong>Агенты 30–120k; модель помещается в 96 ГБ</strong><br><span class="dim">один или много одновременных агентов</span></td><td>RTX PRO 6000</td><td class="dim">по расчёту вчетверо меньше время шага; требует подтверждения тестом</td></tr>
+          <tr><td><strong>Короткий чат и плотные модели</strong></td><td>RTX PRO 6000</td><td class="dim">высокая полоса памяти и быстрый batch-1 decode</td></tr>
+          <tr><td><strong>Много пользователей одной модели</strong></td><td>RTX PRO 6000; реплики 5090, если рабочий набор помещается в 32 ГБ с запасом</td><td class="dim">непрерывная пакетная обработка; нужен одинаковый нагрузочный тест</td></tr>
+          <tr><td><strong>Разные модели и изоляция</strong></td><td>несколько Spark</td><td class="dim">независимые узлы; отказоустойчивость требует отдельных реплик и балансировщика</td></tr>
+          <tr><td><strong>Модель больше 128 ГБ</strong></td><td>кластер, CPU с частичной выгрузкой или облако</td><td class="dim">только после пилота точной версии модели; объём весов не равен рабочему потреблению памяти</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section>
+    <h2><span class="n">02</span>Prefill меняет вывод о скорости</h2>
+    <p>LLM-запрос состоит как минимум из двух разных фаз. <strong>Prefill</strong> обрабатывает весь входной контекст до первого токена ответа; здесь важны матричные вычисления. <strong>Decode</strong> затем порождает токены по одному; при batch=1 он часто ограничен чтением весов из памяти. В многоходовом агенте без кэша каждый новый вызов снова обрабатывает растущую историю, поэтому длинный вход нельзя исключать из расчёта задержки.</p>
+
+    <div class="card pad">
+      <p class="mono" style="font-size:15px">время ответа ≈ очередь + входные токены ÷ prefill tok/s + выходные токены ÷ decode tok/s</p>
+    </div>
+
+    <p>Оценка <span class="mono">полоса памяти ÷ размер весов</span> полезна только как грубая верхнеуровневая подсказка для batch-1 decode плотной модели. Постоянный коэффициент эффективности не существует; этот расчёт не описывает prefill, batching, attention и очередь.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Опубликованный тест</th><th>Железо и стек</th><th class="r">Prefill</th><th class="r">Decode</th><th>Оговорка</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>Nemotron 3 Super 120B-A12B</strong><br><span class="dim">NVFP4</span></td><td>1 × DGX Spark<br><span class="dim">vLLM, speculative decode выключен</span></td><td class="r mono">до 1 884 tok/s</td><td class="r mono"><strong>22,7–23,7 tok/s</strong></td><td class="dim">опубликованный тест vLLM; максимум prefill на промпте 7,2k</td></tr>
+          <tr><td><strong>gpt-oss-120b</strong><br><span class="dim">MXFP4, ISL 2048 / OSL 128, BS=1</span></td><td>1 × DGX Spark<br><span class="dim">llama.cpp, тест NVIDIA</span></td><td class="r mono">1 725,47 tok/s</td><td class="r mono">55,37 tok/s</td><td class="dim">официальный тест конкретной модели и конфигурации</td></tr>
+          <tr><td><strong>gpt-oss-120b</strong><br><span class="dim">MXFP4, pp2048 / tg32</span></td><td>1 × DGX Spark<br><span class="dim">llama.cpp, upstream benchmark</span></td><td class="r mono">2 443,91 tok/s</td><td class="r mono">58,72 tok/s</td><td class="dim">тот же артефакт, что в строке ниже; сборка другая</td></tr>
+          <tr><td><strong>gpt-oss-120b</strong><br><span class="dim">MXFP4, pp2048 / tg128</span></td><td>1 × RTX PRO 6000 Max-Q<br><span class="dim">llama.cpp, upstream benchmark</span></td><td class="r mono">6 403,85 tok/s</td><td class="r mono">197,21 tok/s</td><td class="dim">не строгое сравнение: другая сборка и длина decode</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>У RTX PRO 6000 полоса памяти в 6,56 раза выше, чем у Spark, но это отношение нельзя переносить на весь запрос. Опубликованные несопоставленные замеры gpt-oss показывают меньший разрыв на prefill, чем на decode, что согласуется с вычислительно-насыщенной природой prefill. Но сборки и длины decode различаются, поэтому точный разрыв между Spark и RTX в документе не заявляется и должен быть измерен в пилоте.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Иллюстрация одного агентного шага</th><th class="r">30k входа</th><th class="r">60k входа</th><th class="r">120k входа</th></tr></thead>
+        <tbody>
+          <tr><td>Холодный prefill при 1 884 tok/s</td><td class="r mono">15,9 с</td><td class="r mono">31,8 с</td><td class="r mono">63,7 с</td></tr>
+          <tr><td>Decode 200 токенов при 23 tok/s</td><td class="r mono">8,7 с</td><td class="r mono">8,7 с</td><td class="r mono">8,7 с</td></tr>
+          <tr class="total"><td>Время без очереди и кэша</td><td class="r mono">24,6 с</td><td class="r mono">40,5 с</td><td class="r mono">72,4 с</td></tr>
+          <tr><td>Доля prefill</td><td class="r mono">65%</td><td class="r mono">79%</td><td class="r mono">88%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim">Это расчёт чувствительности по опубликованной паре 1 884/23 tok/s, а не обещание производительности: prefill был измерен на 7,2k, а 30–120k — экстраполяция. При этой паре холодный prefill дольше decode, когда вход примерно в 82 раза длиннее выхода. Длинный ответ, attention-механизм, конкуренция и версия движка изменят соотношение. Наши собственные замеры в разделе 12 дают на чтении 450–850 tok/s вместо 1 884 — пропорция prefill к decode там сохраняется, абсолютное время хода растёт в разы.</p>
+    <p><strong>Вывод:</strong> компактные узлы действительно медленнее в batch-1 decode плотных моделей, но из этого нельзя делать вывод об агентном end-to-end. При свежем контексте 30–120k и коротком ответе время хода часто задаёт prefill; при совпавшем префиксе — качество кэша.</p>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Prefix caching — обязательная часть агентного стека</h3>
+        <p>Automatic Prefix Caching в vLLM повторно использует KV-кэш, если новый запрос имеет <strong>точно тот же неизменный префикс</strong>. Тогда старые сообщения, описание инструментов и большой документ не вычисляются заново; обрабатывается в основном добавившийся хвост.</p>
+        <p>Кэш не делает prefill буквально бесплатным: первый запрос остаётся холодным, совпадение должно быть точным, память конечна и блоки могут быть вытеснены. Кэш не ускоряет decode. В кластере также нужны стабильная сериализация промпта и закрепление диалога за нужным узлом.</p>
+        <p>Это усиливает аргумент за CUDA-платформы: vLLM и SGLang дают зрелое многопользовательское обслуживание и наблюдаемость. И Spark, и RTX получают это преимущество, поэтому кэш не выбирает между ними; их различают цена, ёмкость и замеры. У llama.cpp на Strix Halo тоже есть механизмы повторного использования контекста, но сопоставимую многопользовательскую схему нужно доказать в пилоте.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section>
+    <h2><span class="n">03</span>Что подтверждают спецификации и модели</h2>
+    <p>Объём памяти отвечает на вопрос «поместится ли рабочий набор», полоса — на часть вопроса о decode, а вычислительная мощность и программные ядра — на prefill и пакетную обработку. Для MoE число активных параметров задаёт направление, но не точную скорость: остаются общие слои, attention, KV-кэш, маршрутизация экспертов и накладные расходы движка.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Платформа</th><th class="r">Память</th><th class="r">Полоса</th><th class="r">FP4 AI TOPS, теор.</th><th>Практический смысл</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>DGX Spark · GB10</strong></td><td class="r">128 ГБ общей памяти</td><td class="r mono">273 ГБ/с</td><td class="r mono">до 1000</td><td class="dim">CUDA, vLLM/SGLang/TRT-LLM; ARM64 и общая память требуют проверки образов</td></tr>
+          <tr><td><strong>Ryzen AI Max+ 395</strong><br><span class="dim">Strix Halo</span></td><td class="r">128 ГБ общей памяти</td><td class="r mono">до 256 ГБ/с<br><span class="dim">теор.</span></td><td class="r dim">нет сопоставимого числа</td><td class="dim">ROCm 7.1 официально поддерживает gfx1151; совместимость конкретных вычислительных путей и моделей требует пилота</td></tr>
+          <tr><td><strong>RTX PRO 6000 Blackwell</strong></td><td class="r">96 ГБ GDDR7 ECC</td><td class="r mono">1792 ГБ/с</td><td class="r mono">до 4000</td><td class="dim">сильный decode и многопользовательская работа; меньше памяти, чем у Spark</td></tr>
+          <tr><td><strong>RTX PRO 5000 72 ГБ</strong></td><td class="r">72 ГБ GDDR7 ECC</td><td class="r mono">1344 ГБ/с</td><td class="r mono">до 2064</td><td class="dim">важный промежуточный вариант; российской цены и замера нет — запросить КП</td></tr>
+          <tr><td><strong>EPYC 9755 · 12 каналов</strong></td><td class="r">зависит от DIMM</td><td class="r mono">614 ГБ/с теор.</td><td class="r dim">—</td><td class="dim">500 Вт TDP только CPU; вариант по ёмкости, не замена GPU по задержке</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim">FP4 AI TOPS NVIDIA указаны с разреженностью; это маркетинговый теоретический пик, а не прикладная скорость. У общей памяти часть 128 ГБ занимают ОС, среда выполнения, буферы и KV-кэш; «модель весит меньше 128 ГБ» ещё не гарантирует нужный контекст и конкуренцию.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Модель</th><th class="r">Всего / активных</th><th>Что можно утверждать</th><th>Закупочный риск</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>gpt-oss-120b</strong></td><td class="r">116,8B / 5,1B</td><td class="dim">MXFP4-файл в тесте llama.cpp — 59,02 GiB; опубликованы отдельные prefill и decode</td><td class="dim">веса помещаются в 96 и 128 ГБ, но запас под KV-кэш и конкуренцию нужно измерить</td></tr>
+          <tr><td><strong>Laguna S 2.1</strong></td><td class="r">118B / ≈8B</td><td class="dim">есть несколько форматов весов; Terminal-Bench 2.1 = 70,2 по vendor model card</td><td class="dim">community-рецепт на Spark: ≈25–30 tok/s типично и до 45 на коде при 128k с DFlash; при 256k без DFlash — 14–20</td></tr>
+          <tr><td><strong>Qwen3.6-35B-A3B</strong></td><td class="r">35B / ≈3B</td><td class="dim">официальная карта подтверждает параметры и мультимодальный энкодер</td><td class="dim">для 32-ГБ GPU нужен конкретный Q4/Q5-артефакт; его размер, качество и допустимый контекст не подтверждены</td></tr>
+          <tr><td><strong>DeepSeek-V4-Flash</strong><br><span class="dim">preview / 0731</span></td><td class="r">preview: 284B / ≈13B<br><span class="dim">0731: 304B вместе с DSpark</span></td><td class="dim">preview использует mixed FP4+FP8; файлы репозитория 0731 — ≈167 ГБ, рабочая память больше</td><td class="dim">характеристика «149 ГБ FP8» арифметически невозможна и смешивает две версии; нужен двухузловой пилот</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Баллы моделей не являются приёмочной метрикой</h3>
+        <p>Terminal-Bench зависит от версии набора, агентной обвязки, лимита рассуждений, числа прогонов и внешних инструментов. Баллы 2.0 и 2.1 нельзя сравнивать как одну шкалу. Terminal-Bench 3.0 на официальном сайте ещё назван разрабатываемым; его «баллы» нельзя использовать в закупке.</p>
+        <p>Перед закупкой качество нужно измерять на внутренних задачах и на той же версии весов, квантизации, шаблоне диалога и движке, которые планируется эксплуатировать. Лицензию OpenMDW-1.1 у Laguna также должен проверить юрист.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section>
+    <h2><span class="n">04</span>Смета и полнота вариантов</h2>
+    <p>Цены ниже — снимок розницы и объявлений на дату документа, а не коммерческие предложения. Для закупки юридическим лицом нужны точный SKU, наличие, НДС, гарантия, срок поставки и цена всей системы.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Конфигурация</th><th class="r">Ценовой сценарий</th><th>Что не включено</th><th>Статус</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>1 × DGX Spark</strong></td><td class="r mono">583 588 ₽</td><td class="dim">временный доступ к RTX для сравнения, внедрение</td><td><span class="pill buy">пилот после КП</span></td></tr>
+          <tr><td><strong>2 × DGX Spark</strong></td><td class="r mono">1 118 530 ₽</td><td class="dim">совместимый прямой кабель, внедрение</td><td><span class="pill mb">после одноузлового пилота</span></td></tr>
+          <tr><td><strong>4 × DGX Spark</strong></td><td class="r mono">2 237 060 ₽</td><td class="dim">для независимых узлов 200G-коммутатор не нужен; для одной распределённой модели нужны коммутатор/кабели и КП</td><td><span class="pill mb">после пилота</span></td></tr>
+          <tr><td><strong>RTX PRO 6000 + хост</strong></td><td class="r mono">1 699 999 + 400 000<br>= 2 099 999 ₽</td><td class="dim">UPS, сеть, стойка/рабочее место, ввод в эксплуатацию</td><td><span class="pill buy">альтернатива</span></td></tr>
+          <tr><td><strong>1 Spark + RTX-узел</strong></td><td class="r mono">583 588 + 2 099 999<br>= 2 683 587 ₽</td><td class="dim">инфраструктура и временный сравнительный стенд; остаток 340 736 ₽</td><td><span class="pill mb">резервный путь после пилота</span></td></tr>
+          <tr><td><strong>4 × RTX 5090</strong></td><td class="r mono">4 × 309 999<br>= 1 239 996 ₽</td><td class="dim">четырёх-GPU хост, питание, охлаждение; цена хоста не подтверждена</td><td><span class="pill mb">реплики после замера памяти</span></td></tr>
+          <tr><td><strong>10 × Strix Halo</strong></td><td class="r mono">≈2 500 000 ₽</td><td class="dim">поддержка, оркестрация, фактическая мощность; это не единый пул 1,28 ТБ</td><td><span class="pill no">не для основной эксплуатации</span></td></tr>
+          <tr><td><strong>EPYC + 768 ГБ</strong></td><td class="r mono">≈835 000 ₽</td><td class="dim">BOM не раскрыт: из показанных CPU+платы 174 500 ₽, остальные 660 500 ₽ не разложены</td><td><span class="pill no">смета неполна</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Четыре обычные RTX 5090 нельзя отвергать только потому, что одна большая модель не помещается на одной карте. Для четырёх независимых реплик это сильный вариант по совокупной пропускной способности, если веса, KV-кэш, буферы и целевой контекст помещаются в 32 ГБ с измеренным запасом. Для единой модели с рабочим набором больше 32 ГБ потребуются шардирование через PCIe, больше питания и отдельная проверка эффективности.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Справочно: цена памяти</th><th class="r">Расчёт</th><th class="r">₽/ГБ</th><th>Почему нельзя ранжировать только так</th></tr></thead>
+        <tbody>
+          <tr><td>Strix Halo · готовый узел</td><td class="r mono">250 000 / 128</td><td class="r mono">1 953</td><td class="dim">unified memory, приблизительная цена</td></tr>
+          <tr><td>DGX Spark · готовый узел</td><td class="r mono">583 588 / 128</td><td class="r mono">4 559</td><td class="dim">unified memory, включает CPU/SSD/сеть</td></tr>
+          <tr><td>RTX 5090 · только карта</td><td class="r mono">309 999 / 32</td><td class="r mono">9 687</td><td class="dim">нужен хост; consumer-класс, без ECC</td></tr>
+          <tr><td>RTX PRO 6000 · только карта</td><td class="r mono">1 699 999 / 96</td><td class="r mono">17 708</td><td class="dim">выделенная ECC VRAM; хост не включён</td></tr>
+          <tr><td>Модифицированная RTX 4090 · вторичка</td><td class="r mono">350 000 / 48</td><td class="r mono">7 292</td><td class="dim">не заводской SKU, гарантия и происхождение не подтверждены</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Переделанные 4090 исключить; экспортные «D» — только после проверки</h3>
+        <p>RTX 4090 на 48 ГБ — не заводская конфигурация NVIDIA: память и плата доработаны сторонним производителем. Низкая цена за гигабайт не компенсирует отсутствие заводской гарантии, проверяемой цепочки поставки и предсказуемого ремонта.</p>
+        <p>RTX PRO 6000D — реальный региональный SKU, но его нельзя сравнивать с новой российской розницей без проверки канала поставки, документов и гарантии. В текущем ценовом снимке 734 400 ₽ против 899 000 ₽ — разница около 18%, но без КП она не закупочный аргумент.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Варианты, которые пропускать нельзя</h3>
+        <ul>
+          <li><strong>RTX PRO 6000 Blackwell Max-Q.</strong> Те же 96 ГБ ECC и 1792 ГБ/с при 300 Вт вместо 600 Вт у Workstation Edition; нужны российская цена и замер на целевой модели.</li>
+          <li><strong>RTX PRO 5000 Blackwell 72 ГБ.</strong> 1344 ГБ/с, 300 Вт, ECC; потенциальная середина между 32 и 96 ГБ. Цены и сопоставимого теста нет — запросить КП.</li>
+          <li><strong>Официальные 48-ГБ CUDA-карты парами.</strong> RTX 6000 Ada, L40S или RTX PRO 5000 48 ГБ могут быть приемлемее переделанных 4090; нужны цена полного узла и сравнительный тест.</li>
+          <li><strong>A100 80 ГБ с формальным поставщиком.</strong> Полоса зависит от SKU: 2039 ГБ/с у SXM и 1935 ГБ/с у PCIe; есть NVLink, но это старое поколение без Blackwell FP4, а хост и охлаждение зависят от форм-фактора.</li>
+          <li><strong>Mac Studio 256/512 ГБ.</strong> Такие конфигурации технически релевантны по ёмкости. Нужны актуальные наличие, цена, MLX-совместимость и тест точной версии модели.</li>
+          <li><strong>MI300X 192 ГБ и двухсокетный EPYC.</strong> Технически это варианты для большой GPU- или RAM-ёмкости, но нет подтверждённой цены полного узла в бюджете. Рассматривать только через КП/аренду и пилот.</li>
+          <li><strong>Гибрид.</strong> Локальная базовая нагрузка плюс облако для пиков, а также частичная выгрузка весов или экспертов модели из GPU в RAM могут снизить закупочные расходы при редких пиках.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section>
+    <h2><span class="n">05</span>Закупка, электричество и облако</h2>
+    <p>Сначала нужно определить, что означает лимит 3 млн ₽: только закупку или трёхлетние расходы. Ниже — консервативный расчёт электричества при 24×7 и 7 ₽/кВт·ч. Это <strong>не полная стоимость владения</strong>: охлаждение, UPS, ремонт, администрирование и простой не включены.</p>
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Конфигурация</th><th class="r">Плановый максимум</th><th class="r">Электричество / год</th><th class="r">За 3 года</th><th class="r">Закупка + электричество</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>1 × DGX Spark</strong></td><td class="r mono">0,24 кВт</td><td class="r">14 717 ₽</td><td class="r">44 150 ₽</td><td class="r mono">603 415 ₽</td></tr>
+          <tr><td>2 × DGX Spark</td><td class="r mono">0,48 кВт</td><td class="r">29 434 ₽</td><td class="r">88 301 ₽</td><td class="r mono">1 206 831 ₽<br><span class="dim">+ кабель</span></td></tr>
+          <tr><td>4 × DGX Spark</td><td class="r mono">0,96 кВт</td><td class="r">58 867 ₽</td><td class="r">176 602 ₽</td><td class="r mono">2 413 662 ₽<br><span class="dim">+ сеть</span></td></tr>
+          <tr><td>5 × DGX Spark</td><td class="r mono">1,20 кВт</td><td class="r">73 584 ₽</td><td class="r">220 752 ₽</td><td class="r mono stop">3 017 077 ₽</td></tr>
+          <tr><td>RTX PRO 6000 + хост</td><td class="r mono">0,90 кВт<br><span class="dim">допущение</span></td><td class="r">55 188 ₽</td><td class="r">165 564 ₽</td><td class="r mono">2 265 563 ₽</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>240 Вт для Spark — мощность блока питания и верхняя граница, а не постоянный замер из розетки. Для RTX-узла 0,9 кВт — плановое допущение. Strix и EPYC не включены: 120 Вт у Strix — лимит APU, а не всего мини-ПК; у EPYC 9755 только CPU имеет TDP 500 Вт. Для обеих систем нужен замер из розетки.</p>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Облако нельзя считать только по выходным токенам</h3>
+        <p>Окупаемость нельзя считать только по цене выходных токенов и скорости одного узла. Для агентов длинный вход часто дороже и дольше ответа, а облачный и локальный кэш префикса меняет экономику.</p>
+        <p>На 17 августа официальная страница указывает тариф DeepSeek V4 Flash вне пикового окна: <span class="mono">$0,007</span> за 1 млн входных токенов при попадании в кэш, <span class="mono">$0,22</span> при промахе и <span class="mono">$0,66</span> за выходные токены. В пиковое окно тарифы вдвое выше. Перед решением нужно повторно сверить биллинг в кабинете провайдера.</p>
+      </div>
+    </div>
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Пример одного шага</th><th class="r">Стоимость, ₽</th><th class="r">Шагов на 3 млн ₽</th><th>Допущения</th></tr></thead>
+        <tbody>
+          <tr><td>4k входа + 500 выхода<br><span class="dim">весь вход — промах кэша</span></td><td class="r mono">≈0,10 ₽</td><td class="r mono">≈29,3 млн</td><td class="dim">вне пика</td></tr>
+          <tr><td>30k входа + 500 выхода<br><span class="dim">весь вход — промах кэша</span></td><td class="r mono">≈0,59 ₽</td><td class="r mono">≈5,12 млн</td><td class="dim">вне пика</td></tr>
+          <tr class="hi"><td><strong>120k входа + 500 выхода</strong><br><span class="dim">весь вход — промах кэша</span></td><td class="r mono"><strong>≈2,26 ₽</strong></td><td class="r mono"><strong>≈1,33 млн</strong></td><td class="dim">вне пика</td></tr>
+          <tr><td>120k входа + 500 выхода<br><span class="dim">90% входа попало в кэш точного префикса</span></td><td class="r mono">≈0,31 ₽</td><td class="r mono">≈9,52 млн</td><td class="dim">108k в кэше + 12k промаха; вне пика</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Таблица показывает диапазон чувствительности, а не окупаемость. При длинном контексте и промахах кэша входная часть заметно увеличивает цену шага; 90%-ная доля попаданий в кэш в примере снижает её с ≈2,26 до ≈0,31 ₽. Это не доказывает, что API дешевле локального узла: нужен экспорт фактических входных, выходных и закэшированных токенов хотя бы за 2–4 недели.</p>
+    <p>Локальное железо оправдывают прежде всего режим данных, независимость и контролируемая инфраструктура. Гибрид или аренда допустимы только для данных, которые разрешены политикой безопасности. Тариф H200 в расчёт не включён: нет КП с провайдером, регионом и конфигурацией.</p>
+  </section>
+
+  <!-- 06 -->
+  <section>
+    <h2><span class="n">06</span>Приёмка до масштабирования</h2>
+    <p>Ни расчёт по ГБ/с, ни разрозненные публичные тесты нельзя превращать в гарантированный уровень сервиса. Поставщик или пилотный узел должен пройти одинаковую программу на целевой модели, формате квантизации и версии движка.</p>
+    <p class="dim">Ниже p95 означает границу, которую не превышают 95% запросов; TTFT — время до первого токена ответа.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Числовые пороги задаёт владелец сервиса до теста</h3>
+        <p>В паспорте пилота должны быть заполнены целевая модель и формат весов, число одновременных запросов, p95 TTFT на холодном и прогретом префиксе, p95 межтокенной задержки, доля успешных задач, предел ошибок, бюджет и дата решения «масштабировать или остановить». Пока поля не заполнены, ни один вариант не может «пройти» приёмку.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Проверка</th><th>Что фиксировать</th><th>Критерий решения</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>Контекст 30k / 60k / 120k</strong></td><td class="dim">холодный и прогретый точный префикс; выход 200 и 1000 токенов</td><td>p50/p95 TTFT, p95 межтокенная задержка и p10 decode tok/s</td></tr>
+          <tr><td><strong>Конкуренция 1 / 4 / 8 / целевая</strong></td><td class="dim">смешанные prefill+decode, длины из трассировки реальной нагрузки</td><td>запросов и успешных агентных шагов в час</td></tr>
+          <tr><td><strong>Кэш префикса</strong></td><td class="dim">доля попаданий, вытеснение блоков, стабильность сериализации, закрепление диалога за узлом</td><td>p95 TTFT на прогретом префиксе и запас памяти под KV-кэш</td></tr>
+          <tr><td><strong>Качество</strong></td><td class="dim">внутренний набор задач, вызовы инструментов, структурированный вывод, русский язык</td><td>стоимость и время успешной задачи, не токена</td></tr>
+          <tr><td><strong>Надёжность 24–72 часа</strong></td><td class="dim">нехватка памяти, рестарты, утечки, температура, обновление контейнера</td><td>доля ошибок и потерь не выше согласованного порога</td></tr>
+          <tr><td><strong>Эксплуатация</strong></td><td class="dim">мощность из розетки, шум, охлаждение, восстановление и переключение при отказе</td><td>подтверждённая площадка и операционный регламент</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Шлюз решения</h3>
+        <p>Масштабирование до четырёх Spark одобряется, если Spark проходит заранее утверждённые пороги и выигрывает у RTX по стоимости успешного агентного шага либо единственный вмещает рабочий набор. Если лучше RTX, совокупная закупка пилотного Spark и RTX-узла с инфраструктурой должна остаться в пределах 3 млн ₽. Облачные пики допустимы только для разрешённых политикой данных.</p>
+        <p>До договора нужны не менее трёх сопоставимых коммерческих предложений на полный комплект: оборудование, кабели/коммутатор, хост, UPS, гарантия, НДС, поставка и поддержка.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section>
+    <h2><span class="n">07</span>Позиции, рассмотренные и отклонённые</h2>
+    <p>Три варианта, которые обязательно всплывут при обсуждении бюджета. Ниже — почему они не попали в рекомендацию.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Позиция</th><th class="r">Память</th><th class="r">Полоса</th><th class="r">Цена</th><th>Почему нет</th></tr></thead>
+        <tbody>
+          <tr><td><strong>NVIDIA H200 NVL</strong></td>
+              <td class="r">141 ГБ HBM3e</td><td class="r mono">4800 ГБ/с</td>
+              <td class="r price">от 3 686 636 ₽</td>
+              <td class="dim">лучшая карта из рассмотренных, но на 23% выше бюджета; есть лизинг от 128 111 ₽/мес</td></tr>
+          <tr><td><strong>NVIDIA H100 PCIe</strong></td>
+              <td class="r">80 ГБ HBM2e</td><td class="r mono">~2039 ГБ/с</td>
+              <td class="r">2 908 230 ₽</td>
+              <td class="dim">меньше памяти и дороже на 1,2 млн, чем RTX PRO 6000, при близкой полосе</td></tr>
+          <tr><td>RTX PRO 6000D <span class="dim">экспортная</span></td>
+              <td class="r">84 ГБ</td><td class="r mono">~1400 ГБ/с</td>
+              <td class="r">734 400 ₽</td>
+              <td class="dim">урезаны и объём, и полоса ради экономии 10%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>H100 проигрывает более дешёвой карте</h3>
+        <p>Прямое сравнение: <strong>H100 PCIe — 80 ГБ при 2039 ГБ/с за 2 908 230 ₽</strong> против <strong>RTX PRO 6000 — 96 ГБ при 1792 ГБ/с за 1 699 999 ₽</strong>. Меньше памяти, полоса выше на 14%, цена выше на 1,2 млн.</p>
+        <p>H100 берёт вычислениями двойной точности и NVLink — для обучения и научных расчётов это решающе, для инференса языковых моделей не нужно ни то, ни другое. Если позиция всплывёт в обсуждении, это готовый ответ.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>H200 стоит держать в виду при пересмотре бюджета</h3>
+        <p>141 ГБ при 4800 ГБ/с — это в 2,7 раза быстрее любой альтернативы в отчёте и достаточный объём под всё, кроме моделей на сотни гигабайт. Порог входа 3,7 млн против бюджета в 3 млн.</p>
+        <p>Лизинг от 128 111 ₽ в месяц меняет постановку: это операционный расход вместо капитального, и для организации бывает проще провести. Разумно уточнить условия до окончательного решения.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section>
+    <h2><span class="n">08</span>Модели, которым нужны сотни гигабайт</h2>
+    <p>Отдельный класс, определяющий выбор между одной картой и множеством узлов.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Модель</th><th class="r">Всего / активных</th><th class="r">Размер</th><th class="r">Terminal-Bench 2.1</th><th>Куда влезает</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>GLM-5.2</strong> · Z.ai<br><span class="dim">лицензия MIT, контекст 1M</span></td>
+              <td class="r">753B / ~40B</td>
+              <td class="r k">406 ГБ Int4<br>465 ГБ NVFP4</td>
+              <td class="r mono">81,0 <span class="dim">вендор</span><br>~78 <span class="dim">независимо</span></td>
+              <td class="dim">4 × DGX Spark, EPYC с 768 ГБ; <strong class="stop">ни одна видеокарта не подходит</strong></td></tr>
+          <tr><td>DeepSeek-V4-Flash-0731</td>
+              <td class="r">284B / 13B</td><td class="r k">≈167 ГБ файлы<br>148,7 ГиБ в памяти</td>
+              <td class="r mono">79–82,7</td>
+              <td class="dim">2 × DGX Spark, EPYC. <strong class="stop">Рецепт vLLM: одиночный GB10 меньше чекпойнта; проверен только TP1 при 4k контекста, TP2 не валидирован</strong></td></tr>
+          <tr><td>Laguna S 2.1 · Poolside</td>
+              <td class="r">118B / 8B</td><td class="r k">71 ГБ Q4</td>
+              <td class="r mono">70,2</td>
+              <td class="dim">один узел любой конфигурации</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>GLM-5.2 разводит варианты по разные стороны</h3>
+        <p>Модель на 753 миллиарда параметров при сорока активных требует <strong>от 406 до 465 ГБ</strong> в зависимости от квантования. Это больше, чем даёт любая одиночная карта, включая H200 со 141 ГБ, и больше, чем сборка из четырёх 4090 со 192 ГБ.</p>
+        <p>То есть <strong>если GLM-5.2 или подобные модели входят в требования — конфигурации на видеокартах отпадают целиком</strong>, и выбор сужается до многоузловой сборки или серверного процессора. Если не входят — наоборот, объём свыше 150 ГБ избыточен.</p>
+        <p>Это стоит выяснить у заказчика до закупки: вопрос «нужны ли модели свыше 200 ГБ» меняет решение полностью.</p>
+      </div>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Отрезвляющее про сами баллы</h3>
+        <p>Все цифры в таблице выше — Terminal-Bench 2.1, набор, который к августу 2026 фактически насыщен. На пришедшем ему на смену Terminal-Bench 3.0 картина другая: <strong>GLM-5.2 набирает 4,6%</strong> при лидере 42,7% (Claude Opus 5). Тот же эффект виден и на закрытых моделях — Grok 4.6 даёт 88,4 на 2.1 и 26,0 на 3.0.</p>
+        <p>Читать это надо так: 81 балл у GLM-5.2 не означает «уровень фронтира». Он означает «решает задачи того класса, который фронтир решил год назад». Для решения о закупке отсюда следует не «локальные модели плохи», а конкретное: <strong>сложные агентные задачи локальная модель пока не тянет ни на каком железе за 3 млн</strong>, и обосновывать закупку надо объёмом рутинной работы и требованием локального контура, а не паритетом качества с облаком.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Оговорка о сроках</h3>
+        <p>14 августа вышла GLM-5.3 на той же базе 743B — весь прирост получен пост-тренингом, архитектура не менялась. Веса обещаны примерно через две недели после релиза.</p>
+        <p>Практически это значит, что <strong>разворачивать 5.2 прямо сейчас смысла нет</strong>: рецепты квантования и развёртывания переносятся на новую версию почти без изменений, а качество будет заметно выше. При выборе многоузловой конфигурации стоит закладывать этот срок в план.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <!-- 09 -->
+  <section>
+    <h2><span class="n">09</span>Все платформы в одной таблице</h2>
+    <p>Сведено к четырём величинам, которые определяют выбор: сколько памяти, с какой скоростью она читается, насколько силён процессор на обработке входного контекста и во что обходится гигабайт.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Платформа</th><th class="r">Память</th><th class="r">Полоса</th><th>Prefill</th><th class="r">Цена</th><th class="r">₽ / ГБ</th></tr></thead>
+        <tbody>
+          <tr><td>Мини-ПК на Strix Halo</td><td class="r">128 ГБ</td><td class="r mono">256 ГБ/с</td>
+              <td class="dim">слабый</td><td class="r">≈ 250 000 ₽</td><td class="r mono"><strong>1 950</strong></td></tr>
+          <tr><td>EPYC с 768 ГБ</td><td class="r">768 ГБ</td><td class="r mono">576 заявлено<br>~350 замер</td>
+              <td class="dim">слабый</td><td class="r">835 000 ₽</td><td class="r mono"><strong>1 090</strong></td></tr>
+          <tr class="hi"><td><strong>Mac Studio M3 Ultra</strong><br><span class="dim">28/60, 256 ГБ, 1 ТБ</span></td>
+              <td class="r">256 ГБ</td><td class="r mono">819 ГБ/с</td>
+              <td class="stop">очень слабый</td><td class="r">756 900 ₽</td><td class="r mono">2 957</td></tr>
+          <tr class="hi"><td><strong>DGX Spark</strong> · вторичка</td><td class="r">128 ГБ</td><td class="r mono">273 ГБ/с</td>
+              <td class="ok"><strong>сильный</strong></td><td class="r price">≈ 400 000 ₽</td><td class="r mono">3 125</td></tr>
+          <tr><td>DGX Spark · розница</td><td class="r">128 ГБ</td><td class="r mono">273 ГБ/с</td>
+              <td class="ok">сильный</td><td class="r">584 000 – 727 000 ₽</td><td class="r mono">4 560 – 5 680</td></tr>
+          <tr><td>RTX 4090 · 48 ГБ</td><td class="r">48 ГБ</td><td class="r mono">1008 ГБ/с</td>
+              <td class="ok">сильный</td><td class="r">350 000 ₽</td><td class="r mono">7 300</td></tr>
+          <tr><td>RTX PRO 6000 Blackwell</td><td class="r">96 ГБ</td><td class="r mono">1792 ГБ/с</td>
+              <td class="ok"><strong>максимальный</strong></td><td class="r">1 699 999 ₽</td><td class="r mono">17 700</td></tr>
+          <tr><td>H200 NVL <span class="dim">вне бюджета</span></td><td class="r">141 ГБ</td><td class="r mono">4800 ГБ/с</td>
+              <td class="ok">максимальный</td><td class="r">3 686 636 ₽</td><td class="r mono">26 150</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Mac Studio и DGX Spark — зеркальные противоположности</h3>
+        <p><strong>Mac Studio M3 Ultra</strong> даёт 256 ГБ при 819 ГБ/с за 757 тысяч — это втрое больше полосы, чем у DGX Spark, вдвое больше памяти и дешевле гигабайт. По генерации токенов он бьёт всё, кроме видеокарт.</p>
+        <p>Но <strong>процессор Apple слаб именно на обработке входного контекста</strong> — около 26 TFLOPS FP16 против примерно 100 TFLOPS FP16 у GB10 — вчетверо. Петафлоп в спецификации GB10 относится к FP4 и с числом Apple не сопоставим. На длинных промптах время до первого токена измеряется минутами, и для агентных сценариев это дисквалифицирующий недостаток.</p>
+        <p>DGX Spark устроен ровно наоборот: узкая полоса и слабая генерация, но сильный вычислитель и <strong>prefill до 1900 токенов в секунду</strong>. Выбор между ними — это выбор между «быстро печатает длинные ответы» и «быстро читает длинный контекст».</p>
+        <p>Для агента, который на каждом ходу перечитывает историю и отвечает коротко, правильный ответ — второе.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Про Max-Q: брать полноразмерную</h3>
+        <p>У RTX PRO 6000 есть версия Max-Q за те же деньги — 1 799 999 ₽. Объём памяти и полоса у неё <strong>идентичны</strong> старшей: те же 96 ГБ и 1792 ГБ/с, поэтому скорость генерации не отличается.</p>
+        <p>Разница в частотах: 1035–2280 МГц против 1590–2617, теплопакет 300 Вт вместо 600. То есть Max-Q теряет около трети вычислительной мощности — <strong>и вся эта потеря приходится на prefill</strong>, который для агентных задач и является узким местом.</p>
+        <p>Max-Q оправдана в тесном корпусе или при ограничении по питанию. В остальных случаях — полноразмерная Workstation Edition, тем более что она ещё и на 100 тысяч дешевле.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section>
+    <h2><span class="n">10</span>Сборки под бюджет</h2>
+    <p>Шесть вариантов, укладывающихся в три миллиона. Комплектующие по розничным ценам, вторичный рынок отмечен отдельно.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка</th><th class="r">Память</th><th class="r">Стоимость</th><th class="r">₽ / ГБ</th><th class="r">Остаток</th></tr></thead>
+        <tbody>
+          <tr><td>10 × мини-ПК Strix Halo</td><td class="r">1 280 ГБ</td>
+              <td class="r">2 500 000 ₽</td><td class="r mono">1 953</td><td class="r">500 000 ₽</td></tr>
+          <tr class="hi"><td><strong>7 × DGX Spark</strong> <span class="dim">вторичка</span></td><td class="r">896 ГБ</td>
+              <td class="r price">2 800 000 ₽</td><td class="r mono">3 125</td><td class="r">200 000 ₽</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra</td><td class="r">768 ГБ</td>
+              <td class="r">2 270 700 ₽</td><td class="r mono">2 957</td><td class="r">729 300 ₽</td></tr>
+          <tr><td>EPYC односокетный, 768 ГБ</td><td class="r">768 ГБ</td>
+              <td class="r">835 000 ₽</td><td class="r mono">1 087</td><td class="r">2 165 000 ₽</td></tr>
+          <tr><td>4 × RTX 4090 48 ГБ + хост</td><td class="r">192 ГБ</td>
+              <td class="r">1 800 000 ₽</td><td class="r mono">9 375</td><td class="r">1 200 000 ₽</td></tr>
+          <tr><td>RTX PRO 6000 + хост</td><td class="r">96 ГБ</td>
+              <td class="r">2 099 999 ₽</td><td class="r mono">21 875</td><td class="r">900 001 ₽</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card pad">
+      <h3>Из чего складывается хост под видеокарты</h3>
+      <div class="scroller" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Компонент</th><th>Под одну карту</th><th class="r">Цена</th><th>Под четыре карты</th><th class="r">Цена</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Процессор</td><td>Ryzen 9 / Xeon W</td><td class="r">≈ 90 000 ₽</td><td>EPYC 9004, 128 линий PCIe</td><td class="r">≈ 125 000 ₽</td></tr>
+            <tr><td class="k">Плата</td><td>с одним PCIe 5.0 x16</td><td class="r">≈ 45 000 ₽</td><td>SP5 с четырьмя x16</td><td class="r">≈ 70 000 ₽</td></tr>
+            <tr><td class="k">Память</td><td>128 ГБ DDR5</td><td class="r">≈ 120 000 ₽</td><td>256 ГБ DDR5 ECC</td><td class="r">≈ 240 000 ₽</td></tr>
+            <tr><td class="k">Накопитель</td><td>NVMe 4 ТБ</td><td class="r">≈ 60 000 ₽</td><td>NVMe 8 ТБ</td><td class="r">≈ 110 000 ₽</td></tr>
+            <tr><td class="k">Питание</td><td>1200 Вт, 80+ Platinum</td><td class="r">≈ 35 000 ₽</td><td>2 × 1600 Вт</td><td class="r">≈ 90 000 ₽</td></tr>
+            <tr><td class="k">Корпус, охлаждение</td><td>башня с продувом</td><td class="r">≈ 50 000 ₽</td><td>серверный 4U</td><td class="r">≈ 100 000 ₽</td></tr>
+            <tr class="total"><td>Итого обвязка</td><td></td><td class="r">≈ 400 000 ₽</td><td></td><td class="r">≈ 735 000 ₽</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dim" style="font-size:14px;margin-top:12px">Сборка на четырёх картах требует отдельной силовой линии: 4 × 450 Вт плюс хост даёт около 2,1 кВт под нагрузкой. Обычная бытовая розетка на 16 А этого не держит.</p>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Какая сборка под какую задачу</h3>
+        <ul>
+          <li><strong>Агенты с длинным контекстом.</strong> DGX Spark — единственная платформа, сочетающая объём памяти и сильный prefill. Семь узлов на вторичном рынке дают 896 ГБ, но разумнее взять два и измерить, прежде чем тратить остальное.</li>
+          <li><strong>Быстрый отклик, модели до 90 ГБ.</strong> RTX PRO 6000 полноразмерная. Дороже всех за гигабайт, но вне конкуренции по скорости и пакетной обработке.</li>
+          <li><strong>Максимум памяти за деньги.</strong> EPYC с 768 ГБ за 835 тысяч — если задача пакетная и десять токенов в секунду приемлемы.</li>
+          <li><strong>Длинные ответы, короткие промпты.</strong> Mac Studio M3 Ultra: лучшая генерация среди неигровых платформ, но не для агентов из-за медленного prefill.</li>
+          <li><strong>Компромисс по цене.</strong> Четыре 4090 на 48 ГБ дают 192 ГБ за 1,8 млн, но это доработанные карты вне гарантии и два киловатта под нагрузкой.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section>
+    <h2><span class="n">11</span>На что способна каждая сборка</h2>
+    <p>Предыдущие разделы сравнивают железо. Этот отвечает на вопрос, который задаст заказчик: какие модели пойдут и с какой скоростью. Прочерк означает, что модель не помещается в память.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Модель</th><th class="r">1 Spark<br><span class="dim">расчёт</span></th><th class="r">1 Spark<br><span class="dim">наш замер</span></th><th class="r">2 Spark<br><span class="dim">суммарно</span></th><th class="r">4 Spark<br><span class="dim">суммарно</span></th><th class="r">Mac Studio</th><th class="r">EPYC 768</th><th class="r">4 × 4090</th><th class="r">RTX PRO 6000</th></tr></thead>
+        <tbody>
+          <tr><td>Qwen3.6-35B-A3B</td><td class="r mono">112</td><td class="r mono ok">76,6</td><td class="r mono">193</td><td class="r mono">353</td><td class="r mono">337</td><td class="r mono">129</td><td class="r mono">1423</td><td class="r mono">738</td></tr>
+          <tr><td>gpt-oss-120b</td><td class="r mono">68</td><td class="r dim">—</td><td class="r mono">117</td><td class="r mono">215</td><td class="r mono">205</td><td class="r mono">79</td><td class="r mono">864</td><td class="r mono">448</td></tr>
+          <tr class="hi"><td><strong>Laguna S 2.1</strong></td><td class="r mono">43</td><td class="r mono ok">30,2</td><td class="r mono">74</td><td class="r mono">136</td><td class="r mono">130</td><td class="r mono">50</td><td class="r mono">550</td><td class="r mono">285</td></tr>
+          <tr><td>Qwen3.8-27B <span class="dim">плотная</span></td><td class="r mono stop">3 <span class="dim">F16</span></td><td class="r mono ok">12,3 <span class="dim">Q4</span></td><td class="r mono">6</td><td class="r mono">11</td><td class="r mono">10</td><td class="r mono">4</td><td class="r mono">44</td><td class="r mono">23</td></tr>
+          <tr><td>DeepSeek-V4-Flash</td><td class="r dim">—</td><td class="r dim">—</td><td class="r mono">25</td><td class="r mono">46</td><td class="r mono">44</td><td class="r mono">17</td><td class="r mono">186</td><td class="r dim">—</td></tr>
+          <tr><td>GLM-5.2</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r mono">27</td><td class="r dim">—</td><td class="r mono">10</td><td class="r dim">—</td><td class="r dim">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Токенов в секунду, без спекулятивного декодирования. Расчёт сверен с публикациями: для GLM-5.2 на четырёх Spark формула даёт 27, опубликованный замер — 23–29. Для DeepSeek на двух узлах расчётные 25 превращаются в измеренные 74–82 при включении MTP, который даёт прирост втрое.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Две оговорки к этой таблице, без которых её нельзя читать</h3>
+        <p><strong>Первая: расчёт и замер расходятся в обе стороны.</strong> На Laguna формула завышает — 43 против замеренных 30,2. На плотной Qwen3.8-27B она, наоборот, занижает вчетверо, но по другой причине: расчёт сделан для весов F16, а на практике модель гоняют в Q4, где она втрое меньше и потому втрое быстрее. Вывод для читателя: <strong>колонка «расчёт» задаёт порядок величины, а не обещание</strong>, и решающими надо считать колонку замеров и раздел 12.</p>
+        <p><strong>Вторая: колонки на два и четыре узла — это суммарная пропускная способность, а не скорость одного запроса.</strong> Если модель помещается в один узел, несколько узлов работают независимыми копиями: в час обрабатывается вдвое-вчетверо больше запросов, но <em>каждый отдельный ответ приходит ровно с той же скоростью</em>. Если модель не помещается и её приходится резать между узлами (строки DeepSeek и GLM-5.2), наш замер показывает, что <strong>прироста скорости нет вовсе</strong> — см. поправку вторую в разделе 12. Для этих двух строк цифры остаются расчётными и не подтверждены.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Один шаг агента: 120 000 токенов, ответ 200 токенов</th><th class="r">Расчёт<br><span class="dim">стек класса vLLM</span></th><th class="r">Наш замер<br><span class="dim">llama.cpp, Laguna Q4</span></th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ</strong></td><td class="r mono"><strong>13,6 с</strong></td><td class="r dim">нет карты на стенде</td></tr>
+          <tr class="hi"><td><strong>RTX PRO 6000</strong></td><td class="r mono"><strong>15,7 с</strong></td><td class="r dim">нет карты на стенде</td></tr>
+          <tr><td>4 × DGX Spark <span class="dim">одна модель на всех</span></td><td class="r mono">22,5 с</td><td class="r mono stop">≈3 мин <span class="dim">прироста от узлов нет</span></td></tr>
+          <tr><td>2 × DGX Spark <span class="dim">одна модель на всех</span></td><td class="r mono">39,3 с</td><td class="r mono stop">≈3 мин <span class="dim">прироста от узлов нет</span></td></tr>
+          <tr><td>1 × DGX Spark</td><td class="r mono">68,3 с</td><td class="r mono">3,0 мин <span class="dim">176 с + 6,6 с</span></td></tr>
+          <tr><td>Мини-ПК Strix Halo</td><td class="r dim">не считался</td><td class="r mono">5,7 мин <span class="dim">339 с + 5,0 с</span></td></tr>
+          <tr><td>Mac Studio M3 Ultra</td><td class="r mono stop">6,7 мин</td><td class="r mono stop">≈11 мин <span class="dim">производная от замера EXO</span></td></tr>
+          <tr><td>EPYC с 768 ГБ</td><td class="r mono stop">8,1 мин</td><td class="r dim">нет машины на стенде</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Две колонки расходятся втрое, и это не ошибка одной из них: <span class="mono">llama.cpp</span> заведомо слабее на чтении контекста, чем vLLM, а замеры сняты при параллельной нагрузке. <strong>Правда лежит между колонками</strong> и зависит от выбора движка — что само по себе довод в пользу платформы со зрелым CUDA-стеком. Ни одна колонка не делает Mac Studio и EPYC пригодными для агентов.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Две платформы выбывают, несмотря на хорошие цифры генерации</h3>
+        <p>Посмотрите на строки Mac Studio и EPYC в обеих таблицах. По скорости генерации они выглядят прилично — 130 и 50 токенов в секунду на Laguna. Но <strong>шаг агента занимает у них семь и восемь минут</strong>, потому что почти всё время уходит на чтение контекста.</p>
+        <p>Причина одна: слабый вычислитель. У Apple M3 Ultra около 26 TFLOPS FP16 против примерно 100 у GB10, у серверного процессора и того меньше. Обработка входа — задача вычислительная, а не про полосу памяти, и здесь их преимущества не работают.</p>
+        <p>Для чата с короткими промптами обе платформы разумны. <strong>Для агентов — непригодны</strong>, и никакой объём памяти этого не компенсирует.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Что это значит для решения</h3>
+        <p><strong>Разброс по шагу агента — тридцатикратный:</strong> от 13,6 секунды до восьми минут. Это и есть настоящая разница между сборками, а не проценты в скорости генерации.</p>
+        <p>Внутри пригодных вариантов картина такая. <strong>Видеокарты выигрывают вдвое-втрое</strong> по времени отклика, но упираются в объём: RTX PRO 6000 не тянет DeepSeek и GLM, четыре 4090 не тянут GLM. <strong>Spark масштабируется по памяти, но не по скорости</strong>: четыре узла делают возможным запуск GLM-5.2, при этом шаг агента остаётся примерно таким же, как на одном узле, — расчётные 22 секунды подтверждения на нашем стенде не получили, а поправка вторая в разделе 12 говорит против них.</p>
+        <p>Отсюда рабочая формулировка для заказчика, уже с учётом замеров:</p>
+        <ul>
+          <li><strong>Модель помещается в 96 ГБ</strong> — берите одну карту. Вдвое-втрое быстрее любой компактной коробки, и стек зрелый.</li>
+          <li><strong>Модель до 128 ГБ</strong> — один Spark. Шаг агента от 68 секунд по расчёту до 3 минут по нашему замеру; для фонового агента приемлемо, для интерактивной работы — нет.</li>
+          <li><strong>Модель за 150 ГБ</strong> — многоузловая сборка, и покупается ею <em>возможность запуска</em>, а не скорость. Планировать надо тот же шаг в минуты, а не в секунды.</li>
+          <li><strong>Много одновременных пользователей</strong> — вот здесь несколько узлов действительно окупаются: каждый обслуживает свои запросы независимо, и суммарная пропускная способность растёт линейно.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section>
+    <h2><span class="n">12</span>Замеры на живом железе</h2>
+    <p>Всё, что выше, посчитано по формуле. Ниже — 35 прогонов <span class="mono">llama-bench</span> на реальных машинах, и они правят расчёт в трёх местах.</p>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Как читать эти числа</h3>
+        <p>Замеры сняты на рабочем контуре, а не на стенде: часть прогонов шла, когда на той же машине была загружена другая модель. В журнале это видно по меткам времени — четыре прогона на разных узлах стоят на одной минуте.</p>
+        <p><strong>Следствие: каждое число здесь — нижняя граница.</strong> Чистый прогон даст столько же или больше, но не меньше. Для решения о закупке это безопасная сторона ошибки: платформа оценивается по худшему из наблюдавшегося. Для сравнения платформ между собой — нет, и ниже отмечено, где именно этого сравнения делать нельзя.</p>
+        <p>Строки, помеченные <span class="mono">*</span>, сняты в одну минуту с другими прогонами и годятся только как порядок величины.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Модель</th><th class="r">ГиБ</th><th>Узел</th><th class="r">Чтение, т/с</th><th class="r">Генерация, т/с</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>Laguna S 2.1</strong> Q4_K_M</td><td class="r">66,3</td><td>Spark</td>
+              <td class="r mono">683,5</td><td class="r mono">30,2</td></tr>
+          <tr class="hi"><td><strong>Laguna S 2.1</strong> Q4_K_M</td><td class="r">66,3</td><td>Strix Halo</td>
+              <td class="r mono">353,8</td><td class="r mono"><strong>40,0</strong></td></tr>
+          <tr><td>Qwen3.8-27B Q4_K_M</td><td class="r">15,7</td><td>Spark</td>
+              <td class="r mono">835,6</td><td class="r mono">12,3</td></tr>
+          <tr><td>Qwen3.8-27B Q6_K</td><td class="r">20,9</td><td>Spark</td>
+              <td class="r mono">687,9</td><td class="r mono">8,8</td></tr>
+          <tr><td>Qwen3.8-27B Q8_0</td><td class="r">27,1</td><td>Spark</td>
+              <td class="r mono">710,1</td><td class="r mono">7,7</td></tr>
+          <tr><td>Qwen3.8-27B F16</td><td class="r">50,9</td><td>Spark</td>
+              <td class="r mono">757,1</td><td class="r mono stop">4,6</td></tr>
+          <tr><td>Qwen3-Next-80B-A3B Q6</td><td class="r">61,0</td><td>Spark</td>
+              <td class="r mono">1023,1</td><td class="r mono">45,1</td></tr>
+          <tr><td>Nemotron-3-Super-120B-A12B Q4</td><td class="r">80,1</td><td>Spark</td>
+              <td class="r mono">514,0</td><td class="r mono">21,8</td></tr>
+          <tr><td>MiniMax-M2.7 Q3_K_S</td><td class="r">91,9</td><td>Spark</td>
+              <td class="r mono">456,3</td><td class="r mono">27,4</td></tr>
+          <tr><td>Qwen3-235B-A22B Q3_K_S</td><td class="r">94,5</td><td>Spark</td>
+              <td class="r mono">377,7</td><td class="r mono">15,1</td></tr>
+          <tr><td>Qwen2.5-VL-72B Q5 <span class="dim">плотная</span> <span class="mono">*</span></td><td class="r">50,7</td><td>Spark</td>
+              <td class="r mono">330,8</td><td class="r mono stop">3,9</td></tr>
+          <tr><td>Qwen3-Coder-30B-A3B Q6</td><td class="r">24,5</td><td>Spark</td>
+              <td class="r mono">2004,6</td><td class="r mono">69,0</td></tr>
+          <tr><td>dolphin3-8b</td><td class="r">4,6</td><td>Halo · встроенная</td>
+              <td class="r mono">1180,1</td><td class="r mono">45,5</td></tr>
+          <tr><td>dolphin3-8b</td><td class="r">4,6</td><td>Halo · <strong>RTX 4070 Ti</strong></td>
+              <td class="r mono"><strong>4820,8</strong></td><td class="r mono"><strong>92,6</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Поправка первая: чтение контекста втрое медленнее, чем я считал</h3>
+        <p>В расчётах выше стояла цифра 1884 токена в секунду на чтение — она взята из опубликованного теста vLLM на другой модели и другом стеке. <strong>На живом железе через llama.cpp получается 450–850</strong> для моделей весом 60–95 ГиБ и до 2000 для мелких. Это нижняя граница по причине из врезки выше, и разрыв с 1884 слишком велик, чтобы объясняться одной конкуренцией: движки разные, и llama.cpp на префилле заведомо уступает vLLM.</p>
+        <p>Это меняет время шага агента радикально. Пересчёт по замеренным числам для контекста 120 тысяч токенов:</p>
+        <ul>
+          <li><strong>Laguna на Spark — 3 минуты</strong> (176 с чтение + 7 с ответ), а не 68 секунд</li>
+          <li><strong>Laguna на Strix Halo — 5,7 минуты</strong> (339 с чтение)</li>
+          <li>Qwen2.5-VL-72B, плотная, на Halo — <strong>23 минуты</strong></li>
+        </ul>
+        <p>Вывод про доминирование чтения над генерацией остаётся верным и даже усиливается: в шаге агента на Laguna чтение занимает 96% времени. Абсолютные минуты стоит читать как верхнюю оценку — на свободной машине и на vLLM вместо llama.cpp они сократятся, — но даже вдвое меньшая цифра означает, что на контексте 120 тысяч ни одна из компактных платформ не даёт интерактивного отклика. Спасает только кэширование префикса — при неизменной истории повторное чтение почти бесплатно, и именно ради этого нужен зрелый движок вроде vLLM.</p>
+      </div>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Поправка вторая: разделение модели по узлам не ускоряет</h3>
+        <p>Я считал, что при работе на нескольких узлах полоса памяти складывается. Замеры этого не показывают:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Модель <span class="mono">*</span></th><th class="r">Один узел</th><th class="r">Два узла</th><th class="r">Разница</th></tr></thead>
+            <tbody>
+              <tr><td>Qwen2.5-VL-72B Q5</td><td class="r mono">330,8 / 3,85</td><td class="r mono">271,6 / 3,81</td>
+                  <td class="r mono">чтение −18%<br>генерация −1%</td></tr>
+              <tr><td>Qwen3-235B-A22B Q3</td><td class="r mono">377,7 / 15,07</td><td class="r mono">336,9 / 14,89</td>
+                  <td class="r mono">чтение −11%<br>генерация −1%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px">Обе пары сняты в одну минуту, когда на тех же узлах работали другие прогоны. <strong>Проценты в правой колонке поэтому нельзя предъявлять как цену разделения</strong> — это разница между двумя загрязнёнными замерами. Что из них следует твёрдо, так это отсутствие обратного: ускорения от второго узла не видно ни на чтении, ни на генерации, и никакая конкуренция не смогла бы спрятать ожидавшийся двукратный выигрыш.</p>
+        <p>Механизм это объясняет. Модель режется по слоям: узел считает свою часть и передаёт результат дальше, узлы работают по очереди, а не одновременно. Складывается объём памяти, а не полоса. Полоса складывается только при тензорном параллелизме — а он требует быстрого линка между узлами, иначе обмен внутри каждого слоя съедает выигрыш.</p>
+        <p><strong>Что надо перемерить перед решением:</strong> ту же пару моделей на свободных узлах и отдельно — на линке 200 Гбит/с с тензорным параллелизмом. Ни того, ни другого замера у нас нет. До них планировать так, будто несколько узлов расширяют объём, а не производительность.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>Поправка третья: платформы ведут себя ровно наоборот</h3>
+        <p>Laguna на одной и той же модели и кванте: <strong>Spark читает вдвое быстрее</strong> (683 против 354), <strong>Strix Halo генерирует на треть быстрее</strong> (40,0 против 30,2).</p>
+        <p>Это прямое подтверждение архитектурной разницы: у GB10 сильный вычислитель при узкой полосе, у AMD наоборот. Для агента с длинным контекстом важнее первое, для чата с короткими промптами — второе. Разрыв здесь двукратный, конкуренция такого масштаба не создаёт — этой паре можно верить.</p>
+        <p class="dim">Для калибровки: два прогона той же Laguna на том же Halo дали 353,8 / 40,0 и 312,3 / 38,0 — разброс 13% на чтении. Всё, что укладывается в эти проценты, различием платформ считать нельзя.</p>
+        <p>Отдельно стоит отметить дискретную карту в составе мини-ПК: RTX 4070 Ti читает <strong>вчетверо быстрее встроенной графики</strong> (4821 против 1180) и вдвое быстрее генерирует. Для моделей, влезающих в 12 ГБ, это лучший вариант из всех имеющихся.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Наш стенд сходится с независимыми замерами</h3>
+        <p>Три сторонних источника меряли ту же пару архитектур на другом железе, других моделях и другом стеке — и получили ту же картину:</p>
+        <ul>
+          <li><strong>EXO Labs</strong> собрали связку DGX Spark + Mac Studio M3 Ultra: Spark читает контекст <strong>в 3,8 раза быстрее</strong>, M3 Ultra генерирует <strong>в 3,4 раза быстрее</strong>. Ровно та же зеркальность, что у нас между Spark и Strix Halo.</li>
+          <li>На <strong>gpt-oss-120B</strong> публичные замеры дают Strix Halo около 340 токенов в секунду на чтении против примерно 1700 у Spark — разрыв впятеро. У нас на Laguna разрыв двукратный: модель другая, направление то же.</li>
+          <li>Заявленные 256 ГБ/с у Strix Halo на практике дают <strong>около 215</strong> по независимым измерениям. Наш собственный замер — 212. Совпадение до процента.</li>
+        </ul>
+        <p>Это важно для доверия к разделу: числа сняты при параллельной нагрузке, но <strong>выводы, которые из них следуют, воспроизводятся у посторонних людей на другом оборудовании</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card verdict">
+      <div class="pad">
+        <h3>И отрезвляющее про качество</h3>
+        <p>Laguna S 2.1 в Q4_K_M на собственном наборе из 33 задач: <strong>52% решено</strong>. По группам — работа с контекстом 100%, форматирование 50%, счёт 50%, логика 38%, русский язык 20%.</p>
+        <p>Сопоставьте с маркетинговыми 70,2 балла Terminal-Bench. Разрыв объясняется и квантованием, и тем, что публичные тесты измеряют не то, что нужно конкретной организации.</p>
+        <p>Показателен и разброс: три прогона одной модели по одному и тому же набору дали 30%, 39% и 52%. Менялись не веса, а разбор ответов и параметры запуска. <strong>Собственный набор задач до закупки стоит дороже любого бенчмарка — но и его надо прогонять несколько раз, иначе он измеряет удачу.</strong></p>
+      </div>
+    </div>
+  </section>
+
+
+  <section>
+    <h2><span class="n">13</span>Что вы получите ровно за 3 миллиона</h2>
+    <p>Разделы выше сравнивают компоненты. Этот сравнивает <strong>законченные конфигурации на один и тот же бюджет</strong> — потому что вопрос стоит не «что лучше», а «на что потратить три миллиона». Цены — минимум из найденной розницы; вторичный рынок отмечен отдельно и не подтверждён.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка</th><th class="r">Стоимость</th><th class="r">Память</th><th class="r">Шаг агента<br><span class="dim">120k контекста</span></th><th class="r">Копий рабочей<br>модели 71 ГБ</th><th class="r">Людей<br><span class="dim">агенты / чат</span></th><th>Чего не может</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>RTX PRO 6000 + хост</strong><br><span class="dim">остаток 1 050 000 ₽</span></td>
+              <td class="r mono">1 950 000 ₽</td><td class="r mono">96 ГБ</td><td class="r mono ok"><strong>15,7 с</strong></td><td class="r mono">1</td><td class="r mono ok"><strong>11</strong> / 60</td>
+              <td class="dim">DeepSeek-V4-Flash, GLM-5.2 — не влезают</td></tr>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ + хост</strong><br><span class="dim">вторичка; остаток 785 000 ₽</span></td>
+              <td class="r mono">2 215 000 ₽</td><td class="r mono">192 ГБ</td><td class="r mono ok"><strong>13,6 с</strong></td><td class="r mono">2</td><td class="r mono ok"><strong>13</strong> / 100</td>
+              <td class="dim">GLM-5.2; карты вне гарантии, 2,1 кВт, отдельная линия питания</td></tr>
+          <tr class="hi"><td><strong>2 × Spark + RTX PRO 6000 + хост</strong><br><span class="dim">цены с площадки, безнал с НДС</span></td>
+              <td class="r mono">2 990 000 ₽</td><td class="r mono">96 + 256 ГБ</td><td class="r mono ok"><strong>15,7 с</strong> на карте<br><span class="dim">3 мин на Spark</span></td><td class="r mono">1 + 2</td><td class="r mono ok"><strong>13</strong> / 75</td>
+              <td class="dim">GLM-5.2; два разных стека в эксплуатации</td></tr>
+          <tr><td>5 × DGX Spark <span class="dim">розница</span><br><span class="dim">остаток 82 000 ₽</span></td>
+              <td class="r mono">2 917 940 ₽</td><td class="r mono">640 ГБ</td><td class="r mono">68 с расчёт<br><span class="dim">3 мин замер</span></td><td class="r mono">5</td><td class="r mono">5 / 30</td>
+              <td class="dim">интерактивная работа; остаток не покрывает сеть и стойку</td></tr>
+          <tr><td>5 × DGX Spark <span class="dim">с площадки</span><br><span class="dim">остаток 400 000 ₽</span></td>
+              <td class="r mono">2 600 000 ₽</td><td class="r mono">640 ГБ</td><td class="r mono">68 с расчёт<br><span class="dim">3 мин замер</span></td><td class="r mono">5</td><td class="r mono">5 / 30</td>
+              <td class="dim">то же; экономия против розницы всего 320 тысяч — вторичный рынок по Spark почти не даёт выигрыша</td></tr>
+          <tr><td>EPYC 768 ГБ + RTX PRO 6000<br><span class="dim">остаток 615 000 ₽</span></td>
+              <td class="r mono">2 385 000 ₽</td><td class="r mono">768 + 96 ГБ</td><td class="r mono">15,7 с в памяти карты<br><span class="mono stop">8 мин при выгрузке в RAM</span></td><td class="r mono">1 <span class="dim">полезная</span></td><td class="r mono">11 / 60 <span class="dim">на карте</span><br><span class="stop">0,5 / 4 в RAM</span></td>
+              <td class="dim">копии в RAM делят одну шину — их число не переходит в производительность</td></tr>
+          <tr><td>12 × мини-ПК Strix Halo</td>
+              <td class="r mono">2 748 000 ₽</td><td class="r mono">1536 ГБ<br><span class="dim">по 128 в коробке</span></td><td class="r mono stop">5,7 мин</td><td class="r mono">12</td><td class="r mono">6 / <strong class="ok">80</strong></td>
+              <td class="dim">одну большую модель не соберёт вовсе; 12 машин в обслуживании; ROCm вместо CUDA</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra 256 ГБ<br><span class="dim">остаток 729 000 ₽</span></td>
+              <td class="r mono">2 270 700 ₽</td><td class="r mono">768 ГБ</td><td class="r mono stop">6,7–11 мин</td><td class="r mono">9</td><td class="r mono"><span class="stop">1</span> / 24</td>
+              <td class="dim">агентные сценарии целиком</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">«Копий рабочей модели» — сколько независимых экземпляров Laguna S 2.1 в Q4 (71 ГБ) сборка держит одновременно. Для отдельных машин это прямо переходит в число обслуживаемых пользователей. Для EPYC — нет: копии делят одну шину памяти, и десять экземпляров работают со скоростью одного, поделённой на десять.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Почему не 4 × RTX 4090 48 ГБ, хотя по числам они выигрывают</h3>
+        <p>Эта сборка дешевле рекомендованной на 775 тысяч, быстрее на две секунды в шаге и даёт 192 ГБ в одном хосте. По таблице она лучше. Не рекомендуется она по причинам, которые в таблицу не помещаются:</p>
+        <ul>
+          <li><strong>Это доработанные карты, а не изделие NVIDIA.</strong> Память перепаяна сторонним производителем. Гарантии производителя нет, официальной поддержки нет, закрывающие документы на такую позицию для бухгалтерии проблемны.</li>
+          <li><strong>2,1 кВт под нагрузкой.</strong> Четыре карты по 450 Вт плюс хост. Розетка на 16 А этого не держит — нужна отдельная силовая линия и охлаждение помещения. Это отдельный проект со своим бюджетом и сроком.</li>
+          <li><strong>Шум.</strong> Турбинное охлаждение — около 65 дБ под нагрузкой. В офисном помещении машина не стоит.</li>
+          <li><strong>Риск драйвера.</strong> Модификация не поддерживается вендором; поведение после обновления не гарантировано.</li>
+        </ul>
+        <p><strong>Это решение руководства, а не инженерное.</strong> Если компания готова принять риск серых карт и построить силовую линию — по деньгам и скорости четыре 4090 действительно лучший вариант в таблице. Если нет — рекомендуется первая строка.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:28px">На скольких человек делится каждая сборка</h3>
+    <p>Колонка «людей» выше стоит отдельного разбора, потому что по ней порядок сборок другой, чем по скорости. Расчёт идёт от пропускной способности, а не от памяти: сколько шагов в час выдаёт железо и сколько шагов в час потребляет один работающий человек.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка</th><th class="r">Время шага<br><span class="dim">агент, 120k</span></th><th class="r">Шагов в час<br><span class="dim">вся сборка</span></th><th class="r">Агентных<br>пользователей</th><th class="r">Ответов в час<br><span class="dim">чат</span></th><th class="r">Собеседников<br>в чате</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ</strong></td><td class="r mono">13,6 с</td><td class="r mono">265</td><td class="r mono ok"><strong>13</strong></td><td class="r mono">3 270</td><td class="r mono ok"><strong>100</strong></td></tr>
+          <tr class="hi"><td><strong>2 × Spark + RTX PRO 6000</strong></td><td class="r mono">15,7 с<br><span class="dim">+ 2 узла фоном</span></td><td class="r mono">269</td><td class="r mono ok"><strong>13</strong></td><td class="r mono">2 300</td><td class="r mono ok"><strong>75</strong></td></tr>
+          <tr><td>RTX PRO 6000 + хост</td><td class="r mono">15,7 с</td><td class="r mono">229</td><td class="r mono">11</td><td class="r mono">1 800</td><td class="r mono">60</td></tr>
+          <tr><td>12 × мини-ПК Strix Halo</td><td class="r mono stop">5,7 мин</td><td class="r mono">125</td><td class="r mono">6</td><td class="r mono">2 400</td><td class="r mono ok"><strong>80</strong></td></tr>
+          <tr><td>5 × DGX Spark</td><td class="r mono">3,0 мин</td><td class="r mono">100</td><td class="r mono">5</td><td class="r mono">925</td><td class="r mono">30</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono stop">11 мин</td><td class="r mono stop">16</td><td class="r mono stop">1</td><td class="r mono">720</td><td class="r mono">24</td></tr>
+          <tr><td>EPYC 768 ГБ <span class="dim">без карты</span></td><td class="r mono stop">8,1 мин</td><td class="r mono stop">7</td><td class="r mono stop">менее 1</td><td class="r mono">133</td><td class="r mono stop">4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Допущения, от которых считалось: <strong>агентный пользователь</strong> — 20 шагов в час, контекст 120 тысяч токенов, ответ 200 токенов. <strong>Собеседник в чате</strong> — 30 сообщений в час, промпт 2 тысячи токенов, ответ 500. Расчёт последовательный: без кэширования префикса и без пакетной обработки, то есть это <strong>нижняя граница</strong>. Скорости взяты замеренные там, где стенд их даёт, и расчётные для видеокарт.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Три вещи, из-за которых эту таблицу читают неправильно</h3>
+        <p><strong>Агентов и собеседников нельзя мерить одной шкалой.</strong> Двенадцать мини-ПК на Strix Halo обслужат 80 человек в чате — лучший результат из всех сборок — и всего шестерых в агентной работе. Причина в том, что чат упирается в генерацию, где AMD силён, а агент упирается в чтение контекста, где он слаб. <strong>Сначала надо решить, что за нагрузка, и только потом смотреть в таблицу.</strong></p>
+        <p><strong>Пакетная обработка меняет чатовую колонку в разы, а агентную — почти нет.</strong> На видеокарте с непрерывным батчингом десятки собеседников обслуживаются почти без потери скорости на каждого, потому что генерация упирается в полосу памяти и веса читаются один раз на всю группу. Чтение контекста упирается в вычислитель, и там группировка запросов даёт немного. То есть чатовые числа — консервативная оценка, агентные — близки к реальности.</p>
+        <p><strong>Кэширование префикса — единственный способ поднять агентную колонку кратно.</strong> Когда человек ведёт диалог с агентом, история между ходами почти не меняется, и при работающем кэше повторное чтение почти бесплатно. Тогда шаг определяется генерацией, и число агентных пользователей растёт в разы. Это довод не в пользу конкретного железа, а в пользу зрелого движка: в vLLM кэш работает из коробки, на связке ROCm его ещё надо доводить.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Что из этой таблицы следует</h3>
+        <p><strong>Три миллиона покупают либо скорость, либо объём. Одновременно — нет.</strong> Разрыв по времени отклика между верхней и нижней строкой — <strong>сорокакратный</strong>, от 13,6 секунды до 11 минут, при разнице по памяти в 16 раз в обратную сторону. Это и есть весь выбор.</p>
+        <ul>
+          <li><strong>Скорость.</strong> Видеокарта даёт отклик в пределах 15 секунд — единственный вариант, при котором с системой можно работать интерактивно. Потолок — 96 ГБ, то есть модели уровня Laguna и Qwen3.8, но не DeepSeek и не GLM.</li>
+          <li><strong>Объём.</strong> Компактные узлы дают сотни гигабайт и запускают то, что карте недоступно, но шаг агента измеряется минутами. Это пригодно для фоновой работы — ночная обработка, пакетный разбор, — и непригодно для работы за монитором.</li>
+          <li><strong>Число пользователей.</strong> Третья независимая ось, и по ней порядок сборок меняется: в чате двенадцать мини-ПК Strix Halo обслуживают 80 человек и обходят карту, а в агентной работе те же двенадцать коробок дают шестерых против одиннадцати у карты. Раскладка — в таблице выше.</li>
+          <li><strong>Худший вариант — Mac Studio и EPYC.</strong> Обе платформы выглядят убедительно по цене за гигабайт и по скорости генерации, и обе проигрывают на порядок там, где решается дело.</li>
+        </ul>
+        <p><strong>Рекомендация по этой таблице:</strong> третья строка. Карта закрывает интерактивную работу и наиболее вероятный основной сценарий, два Spark со вторичного рынка добавляют 256 ГБ под большие модели и фоновые задачи, и всё вместе укладывается в 2,9 млн. Цена этого решения — два разных стека в эксплуатации; это единственный его существенный минус, и он управляемый.</p>
+        <p class="dim">Оговорка: строки с видеокартами опираются на расчёт, а не на замер — такой карты на стенде нет. Строки Spark и Strix Halo подтверждены собственными замерами. Если сравнительный тест RTX PRO 6000 покажет числа хуже расчётных, рекомендация меняется в пользу четвёртой строки.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">14</span>Что требует ручного подтверждения</h2>
+    <div class="grid">
+      <div class="card pad">
+        <h3>Цены и поставка</h3>
+        <p class="dim" style="font-size:14.5px">Розничные страницы и объявления не подтверждают точную комплектацию, остаток, НДС и гарантию. Нужны КП на Spark, полный перечень компонентов RTX-хоста, инфраструктуру и временный RTX-стенд. Ценовые сценарии не являются разрешением на заказ.</p>
+      </div>
+      <div class="card pad">
+        <h3>Бенчмарки и воспроизводимость</h3>
+        <p class="dim" style="font-size:14.5px">Пара 1 884/22,7–23,7 tok/s взята из опубликованного теста vLLM без speculative decode, но prefill измерен лишь до 7,2k. Строки Spark/RTX в llama.cpp используют разные сборки и не являются строгим сравнением. Замеры Laguna с DFlash остаются данными сообщества. Собственные замеры раздела 12 сняты на рабочем контуре при параллельной нагрузке и являются нижней границей; перед решением нужен повторный прогон на свободных узлах — в первую очередь пары «один узел / два узла» и сравнения Spark с Strix Halo.</p>
+      </div>
+      <div class="card pad">
+        <h3>Большие и новые модели</h3>
+        <p class="dim" style="font-size:14.5px">Для DeepSeek-V4-Flash не подтверждены точный формат, рабочая память, контекст и скорость на двух Spark. Кластер — шардирование памяти, а не прозрачный единый пул. Заявленные баллы новой Qwen3.8-27B также не считать независимо подтверждёнными: модель вышла за несколько дней до этого документа.</p>
+      </div>
+      <div class="card pad">
+        <h3>Эксплуатация</h3>
+        <p class="dim" style="font-size:14.5px">Нужны замеры потребления из розетки у Strix, EPYC и RTX-хоста, проверка ARM64-образов Spark, план обновлений, мониторинга, резервирования и восстановления.</p>
+      </div>
+    </div>
+    <p>Рыночный прогноз цен на 2027 год в решении не используется: источника с достаточной уверенностью нет.</p>
+  </section>
+
+
+  <section>
+    <h2><span class="n">15</span>Откуда взято каждое число</h2>
+    <p>Каждая величина, на которую опирается решение, с указанием источника и статуса проверки. <span class="pill buy">подтверждено</span> — источник совпал с текстом; <span class="pill mb">исправлено</span> — источник разошёлся, текст выше уже приведён к источнику; <span class="pill no">не проверено</span> — внешнего подтверждения нет.</p>
+
+    <h3 style="margin-top:24px">Железо</h3>
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Величина</th><th>В статье</th><th>Источник говорит</th><th>Статус</th><th>Ссылка</th></tr></thead>
+        <tbody>
+          <tr><td>DGX Spark: память и полоса</td><td class="mono">128 ГБ · 273 ГБ/с</td><td>128 ГБ LPDDR5X-8533, шина 256 бит, 273 ГБ/с</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://docs.nvidia.com/dgx/dgx-spark/hardware.html">NVIDIA docs</a>, <a href="https://chipsandcheese.com/p/analyzing-nvidia-gb10s-gpu">Chips and Cheese</a></td></tr>
+          <tr><td>GB10: вычислитель</td><td class="mono">≈1 PFLOP FP4<br>≈100 TFLOPS FP16</td><td>1000 AI TOPS FP4; ~100 TFLOPS FP16</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.nvidia.com/en-us/products/workstations/dgx-spark/">NVIDIA</a>, <a href="https://blog.exolabs.net/nvidia-dgx-spark/">EXO Labs</a></td></tr>
+          <tr><td>Strix Halo: полоса</td><td class="mono">256 ГБ/с заявлено<br>212 наш замер</td><td>256 ГБ/с теоретических, ≈215 на практике</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html">AMD</a>, <a href="https://llm-tracker.info/AMD-Strix-Halo-(Ryzen-AI-Max+-395)-GPU-Performance">llm-tracker</a></td></tr>
+          <tr><td>RTX PRO 6000 Blackwell</td><td class="mono">96 ГБ · 1792 ГБ/с<br>600 Вт / Max-Q 300 Вт</td><td>96 ГБ GDDR7, 512 бит, 1792 ГБ/с, 600 Вт; Max-Q 300 Вт</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000/">NVIDIA</a>, <a href="https://www.pny.com/nvidia-rtx-pro-6000-blackwell-ws">PNY</a></td></tr>
+          <tr><td>RTX 4090 48 ГБ (модификация)</td><td class="mono">48 ГБ · 1008 ГБ/с</td><td>тот же AD102 и шина 384 бит, память удвоена, полоса ≈1 ТБ/с; цена $3 500–4 100</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.tomshardware.com/pc-components/gpus/blower-style-rtx-4090-48gb-teardown-reveals-dual-sided-memory-configuration-pcb-design-echoes-the-rtx-3090">Tom&#8217;s Hardware</a>, <a href="https://videocardz.com/newz/custom-geforce-rtx-4090-48gb-now-comes-with-water-cooling-sales-of-modded-48gb-cards-booming-in-china">VideoCardz</a></td></tr>
+          <tr><td>H200 NVL</td><td class="mono">141 ГБ · 4800 ГБ/с</td><td>141 ГБ HBM3e, 4,8 ТБ/с</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.spheron.network/blog/nvidia-h200-specs/">Spheron</a>, <a href="https://www.trgdatacenters.com/resource/nvidia-h200-vs-h100/">TRG</a></td></tr>
+          <tr><td>H100</td><td class="mono">80 ГБ · 3350 ГБ/с</td><td>80 ГБ HBM3, 3,35 ТБ/с</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.horizoniq.com/blog/h200-vs-h100/">HorizonIQ</a></td></tr>
+          <tr class="hi"><td>Mac Studio M3 Ultra: вычислитель</td><td class="mono">≈26 TFLOPS FP16</td><td>≈26 TFLOPS FP16 при 819 ГБ/с. <strong>В прежней редакции стояло 54 TFLOPS и сравнивалось с петафлопом FP4 — разные точности</strong></td><td><span class="pill mb">исправлено</span></td><td><a href="https://blog.exolabs.net/nvidia-dgx-spark/">EXO Labs</a></td></tr>
+          <tr class="hi"><td>EPYC: полоса памяти</td><td class="mono">576 заявлено<br>≈350 замер</td><td>12 каналов DDR5-6000, 576 ГБ/с по AMD; STREAM TRIAD 348 ГБ/с. <strong>В прежней редакции стояло ~400</strong></td><td><span class="pill mb">исправлено</span></td><td><a href="https://www.amd.com/content/dam/amd/en/documents/epyc-business-docs/datasheets/amd-epyc-9005-series-processor-datasheet.pdf">AMD datasheet</a>, <a href="https://www.phoronix.com/forums/forum/hardware/processors-memory/1507066-8-vs-12-channel-ddr5-6000-memory-performance-with-amd-5th-gen-epyc">Phoronix</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:24px">Модели и бенчмарки</h3>
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Величина</th><th>В статье</th><th>Источник говорит</th><th>Статус</th><th>Ссылка</th></tr></thead>
+        <tbody>
+          <tr><td>GLM-5.2</td><td class="mono">753B / 40B, MIT<br>1M, TB 2.1 = 81,0</td><td>всё совпадает. Расхождение между источниками: страница GLM-5.3 называет ту же базу 743B</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.morphllm.com/glm-5-2">morphllm</a>, <a href="https://artificialanalysis.ai/models/glm-5-2">Artificial Analysis</a></td></tr>
+          <tr class="hi"><td>GLM-5.2 на Terminal-Bench 3.0</td><td class="mono">4,6% при лидере 42,7%</td><td>10-е место, 4,6% ±1; первое место Claude Opus 5 — 42,7%</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://snorkel.ai/leaderboard/terminal-bench-3-0/">Snorkel AI</a></td></tr>
+          <tr><td>GLM-5.3</td><td class="mono">743B, 14.08.2026<br>веса ≈через 2 недели</td><td>та же база, весь прирост от пост-тренинга; веса поэтапно после оценок безопасности</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://explainx.ai/blog/glm-5-3-launch-cyber-defense-benchmarks-august-2026">explainx</a>, <a href="https://wccftech.com/zhipus-glm-5-3-matches-fable-5-on-coding-using-only-post-training-and-stuns-fans-by-unearthing-a-vulnerability-all-the-way-from-1981/">Wccftech</a></td></tr>
+          <tr class="hi"><td>DeepSeek-V4-Flash-0731</td><td class="mono">284B / 13B, 1M<br>≈167 ГБ файлы<br>148,7 ГиБ в памяти</td><td>284B/13B, 1M контекста, TB 2.1 = 82,7; чекпойнт ≈167 ГБ, загружается 148,66 ГиБ. <strong>Одиночного GB10 не хватает; проверен только TP1 при 4k, TP2 не валидирован.</strong> В прежней редакции стояло «149 ГБ FP8»</td><td><span class="pill mb">исправлено</span></td><td><a href="https://recipes.vllm.ai/deepseek-ai/DeepSeek-V4-Flash">vLLM recipes</a>, <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731">Hugging Face</a></td></tr>
+          <tr><td>Laguna S 2.1</td><td class="mono">118B / 8B<br>71 ГБ Q4, TB 2.1 = 70,2</td><td>118B/8B, 256 экспертов, 1M контекста, TB 2.1 = 70,2. В NVFP4/INT4 — ≈59 ГБ; наши 71 ГБ — это Q4_K_M в llama.cpp, другой квантователь</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://huggingface.co/poolside/Laguna-S-2.1">Hugging Face</a>, <a href="https://www.marktechpost.com/2026/07/21/poolside-releases-laguna-s-2-1/">MarkTechPost</a></td></tr>
+          <tr><td>Qwen3.8-27B</td><td class="mono">27B плотная</td><td>27,78B плотная мультимодальная, Apache 2.0, контекст 262 144, TB 2.1 = 73,0, вышла 14.08.2026</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://benchlm.ai/models/qwen3-8-27b">BenchLM</a>, <a href="https://www.yottalabs.ai/post/qwen-3-8-27b-specs-hardware-requirements-how-to-run-2026">Yotta Labs</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:24px">Замеры производительности</h3>
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Величина</th><th>В статье</th><th>Источник говорит</th><th>Статус</th><th>Ссылка</th></tr></thead>
+        <tbody>
+          <tr><td>Prefill против decode: Spark и Apple</td><td class="mono">зеркальные архитектуры</td><td>Spark читает в 3,8 раза быстрее M3 Ultra, M3 Ultra генерирует в 3,4 раза быстрее Spark</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://blog.exolabs.net/nvidia-dgx-spark/">EXO Labs</a></td></tr>
+          <tr><td>Prefill: Spark против Strix Halo</td><td class="mono">683 против 354 <span class="dim">наш замер</span></td><td>на gpt-oss-120B — ≈1700 против ≈340, разрыв впятеро</td><td><span class="pill buy">подтверждено</span></td><td><a href="https://www.hashtechwave.com/amd-strix-halo-review/">hashtechwave</a>, <a href="https://developer.nvidia.com/blog/how-nvidia-dgx-sparks-performance-enables-intensive-ai-tasks/">NVIDIA</a></td></tr>
+          <tr><td>Пара 1 884 / 22,7–23,7 tok/s</td><td class="mono">использована в разделе 02</td><td>опубликованный тест vLLM; prefill измерен только до 7,2k, 30–120k — экстраполяция</td><td><span class="pill mb">исправлено</span></td><td><a href="https://vllm.ai/blog/2026-06-01-vllm-dgx-spark">vLLM</a></td></tr>
+          <tr class="hi"><td>Наши 35 прогонов llama-bench</td><td class="mono">раздел 12</td><td>внешнего источника нет: собственный стенд, часть прогонов при параллельной нагрузке</td><td><span class="pill no">не проверено</span></td><td>требуется повторный прогон на свободных узлах</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:24px">Цены</h3>
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Розничная цена Spark в России оказалась выше, чем стояло в статье</h3>
+        <p>Мировая рекомендованная цена — <strong>$3 999</strong>, что по курсу 84,54 даёт 338 тысяч ₽. Российская розница на 18 августа 2026:</p>
+        <ul>
+          <li><a href="https://www.nix.ru/autocatalog/other_computers/NVIDIA-DGX-Spark-4TB-940-54242-0006-000-ARM-v92-A-GB10-128-4TbSSD-NVIDIA-Grace-Blackwell-WiFi-BT-DGX-OS_960944.html">NIX.ru</a> — <span class="mono">583 588 ₽</span> (минимум из найденного)</li>
+          <li><a href="https://i-teh.com/catalog/sistemnyy_blok/nvidia_dgx_spark_940_54242_0006_000_superkompyuter/">ИНФОТЕХ</a> — <span class="mono">696 902 ₽</span></li>
+          <li><a href="https://tehpos.ru/elektrostal/nvidia-940-54242-0006-000.html">TEHPOS</a> — <span class="mono">714 027 ₽</span></li>
+          <li><a href="https://onpad.ru/catalog/cubie/nvidia/3964.html">ONPAD</a> — <span class="mono">726 900 ₽</span></li>
+          <li><a href="https://www.regard.ru/product/763551/superkompiuter-nvidia-dgx-spark-940-54242-0006-000">Регард</a>, <a href="https://kvan.tech/catalog/servery-i-vychislitelnye-sistemy/server-nvidia-dgx-spark/">Kvantech</a>, <a href="https://www.ozon.ru/product/kompaktnyy-superkompyuter-nvidia-dgx-spark-s-ii-128gb-lpddr5-4tb-ssd-3377377344/">OZON</a> — цена уточняется у продавца</li>
+        </ul>
+        <p>Разброс — <strong>от 584 до 727 тысяч ₽</strong>, то есть наценка к мировой цене от 1,7 до 2,2 раза. В сметах выше принят минимум 583 588 ₽; при закупке по среднему рынку смета четырёх узлов вырастет примерно на 400 тысяч. <strong>Это делает КП обязательным, а не желательным.</strong></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Вторичный рынок: снято с площадки 18 августа 2026</h3>
+    <p>Ниже — реальные объявления, просмотренные вручную, а не оценки. По DGX Spark на площадке 68 объявлений, по RTX PRO 6000 Blackwell — 220. Ссылки ведут на поисковые запросы, а не на конкретные объявления: объявления живут недели, запрос воспроизводим в любой момент.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Позиция</th><th class="r">Минимум</th><th class="r">Типично<br><span class="dim">в наличии</span></th><th class="r">Максимум</th><th>Замечание</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>DGX Spark</strong> 128 ГБ / 4 ТБ<br><a href="https://www.avito.ru/all?q=DGX+Spark">запрос</a></td>
+              <td class="r mono">404 990 ₽<br><span class="dim">Dell, 2 ТБ</span></td><td class="r mono"><strong>450 000 – 500 000 ₽</strong></td><td class="r mono">700 000 ₽<br><span class="dim">с НДС</span></td>
+              <td class="dim">дешёвые позиции — под заказ из США или ЕС, срок 3–4 недели, до 2 месяцев. Gigabyte AI TOP ATOM — 440 000 ₽, Asus Ascent GX10 — от 369 990 ₽</td></tr>
+          <tr class="hi"><td><strong>RTX PRO 6000 Blackwell</strong><br>Workstation, 96 ГБ<br><a href="https://www.avito.ru/all?q=RTX+PRO+6000+Blackwell">запрос</a></td>
+              <td class="r mono">899 000 ₽</td><td class="r mono"><strong>999 000 – 1 100 000 ₽</strong></td><td class="r mono">1 644 500 ₽</td>
+              <td class="dim">899 000 ₽ — один продавец, у которого по этой же цене идут и Server, и Max-Q, что для разных изделий невозможно. С гарантией и счётом юрлицу — 1 500 000 – 1 650 000 ₽</td></tr>
+          <tr><td>RTX PRO 6000 Max-Q, 96 ГБ<br><a href="https://www.avito.ru/all?q=RTX+PRO+6000+Max-Q">запрос</a></td><td class="r mono">999 000 ₽</td><td class="r mono">1 428 000 – 1 690 000 ₽</td><td class="r mono">1 690 000 ₽</td>
+              <td class="dim">дороже полноразмерной при худшем prefill — вывод раздела 09 подтверждается и ценой</td></tr>
+          <tr><td>RTX PRO 6000 Server Edition<br><a href="https://www.avito.ru/all?q=RTX+PRO+6000+Server+Edition">запрос</a></td><td class="r mono">1 409 700 ₽</td><td class="r mono">1 550 000 ₽</td><td class="r mono">1 900 000 ₽</td>
+              <td class="dim">пассивное охлаждение, нужен серверный корпус с продувом</td></tr>
+          <tr class="hi"><td><strong>RTX PRO 5000 Blackwell</strong>, 72 ГБ<br><a href="https://www.avito.ru/all?q=RTX+PRO+5000+Blackwell">запрос</a></td><td class="r mono">690 000 ₽</td><td class="r mono">979 800 ₽</td><td class="r mono">979 800 ₽</td>
+              <td class="dim">не рассматривалась в разделах выше — а зря: 9 600 ₽/ГБ против 16 100 у старшей карты</td></tr>
+          <tr><td>RTX PRO 6000D, 84 ГБ<br><a href="https://www.avito.ru/all?q=RTX+PRO+6000D">запрос</a></td><td class="r mono">734 400 ₽</td><td class="r mono">1 010 000 – 1 049 000 ₽</td><td class="r mono">1 100 000 ₽</td>
+              <td class="dim">экспортная версия для Китая; отклонена в разделе 07 по составу поставки и поддержке</td></tr>
+          <tr><td>RTX 4090 48 ГБ <span class="dim">доработанная</span><br><a href="https://www.avito.ru/all?q=RTX+4090+48GB">запрос</a></td>
+              <td class="r mono">340 000 ₽<br><span class="dim">4090D</span></td><td class="r mono">370 000 – 382 000 ₽</td><td class="r mono">500 000 ₽<br><span class="dim">с НДС 22%</span></td>
+              <td class="dim">оценка 350 000 ₽ в сметах выше подтвердилась. Встречается вариант «делаем в РФ сами»</td></tr>
+          <tr><td>Мини-ПК Strix Halo 128 ГБ<br><a href="https://www.avito.ru/all?q=Ryzen+AI+Max+395">запрос</a></td>
+              <td class="r mono">229 000 ₽</td><td class="r mono">229 000 ₽</td><td class="r dim">—</td>
+              <td class="dim">GMKtec EVO-X2; оценка 250 000 ₽ в сметах выше консервативна</td></tr>
+          <tr><td>H200<br><a href="https://www.avito.ru/all?q=NVIDIA+H200">запрос</a></td><td class="r dim">—</td><td class="r mono">3 999 000 ₽</td><td class="r dim">—</td>
+              <td class="dim">подтверждает вывод раздела 07: вне бюджета</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Ловушка, из-за которой смета по объявлениям расходится с реальностью на пятую часть</h3>
+        <p>Цена в объявлении почти всегда указана <strong>за наличный расчёт физическому лицу</strong>. Продавцы пишут это прямым текстом: «оплата по карте +12%», «оплата по счёту с НДС +12%», «работаем с юрлицами +7%», «цена как в объявлении для физлиц». Один продавец Spark указывает 467 900 ₽ наличными и 700 000 ₽ по безналу с НДС — разница в полтора раза.</p>
+        <p>Компания платит по счёту с НДС и с закрывающими документами. Значит <strong>к любой цене из таблицы выше надо прибавлять от 7 до 22 процентов</strong>, а к позициям с гарантией и договором поставки ориентироваться сразу на верхнюю границу диапазона. Смета, посчитанная по заголовкам объявлений, занижена системно, а не случайно.</p>
+        <p>Второе следствие: минимальные цены — почти всегда «под заказ» со сроком 3–4 недели, а по Founders Edition из ЕС до двух месяцев. Это не позиции «в наличии», и планировать по ним сроки внедрения нельзя.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Что рынок поменял в решении</h3>
+        <p><strong>RTX PRO 6000 дешевле, чем считалось.</strong> В сметах выше стоит розничная цена 1 699 999 ₽. С документами и гарантией на площадке она берётся за 1 500 000 – 1 650 000 ₽, а физическому лицу под заказ — около 1 100 000 ₽. Для компании реалистично закладывать <strong>1 550 000 ₽</strong>, то есть примерно на 150 тысяч дешевле, чем в расчётах.</p>
+        <p><strong>Spark дороже, чем считалось.</strong> В расчётах вторичного рынка стояло 400 000 ₽ за узел. Фактически это цена «под заказ из США на 3–4 недели»; в наличии узел стоит 450 000 – 500 000 ₽ наличными, то есть <strong>около 520 000 ₽ по безналу с НДС</strong> — почти вровень с минимальной розницей в 583 588 ₽. Экономия на вторичном рынке по Spark оказалась мнимой.</p>
+        <p><strong>Рекомендованная сборка при этом сходится.</strong> RTX PRO 6000 (1 550 000 ₽) + хост (400 000 ₽) + два Spark по безналу (1 040 000 ₽) = <span class="mono">2 990 000 ₽</span>. Влезает в бюджет, но впритык, без запаса на ИБП и сеть. Если запас нужен — берётся один Spark вместо двух, и сборка стоит 2 470 000 ₽ при остатке в полмиллиона.</p>
+        <p><strong>И одна позиция, которую стоит запросить отдельно.</strong> RTX PRO 5000 Blackwell на 72 ГБ за 690 000 – 980 000 ₽ в разделах выше не рассматривалась. По цене гигабайта она лучше старшей карты в полтора раза, а 72 ГБ хватает под Laguna и Qwen3.8. Две такие карты дают 144 ГБ дешевле, чем одна RTX PRO 6000 даёт 96. <strong>Перед заказом стоит запросить КП и на неё</strong> — оценка её prefill в этом документе не делалась.</p>
+      </div>
+    </div>
+
+    <p class="dim">Курс 84,54 ₽/$ зафиксирован в документе как расчётная константа и внешним источником здесь не подтверждается. Цены выше сняты вручную 18 августа 2026 и являются снимком рынка, а не офертой.</p>
+  </section>
+
+  <footer>
+    <div>Расчёты: курс 84,54 ₽/$; электричество 7 ₽/кВт·ч, 8760 ч/год. Цены — рыночный снимок на 18.08.2026; не заменяют коммерческое предложение. Проверка каждой величины по источникам — раздел 15.</div>
+    <div>Первичные спецификации: <a href="https://docs.nvidia.com/dgx/dgx-spark/hardware.html">NVIDIA DGX Spark</a> · <a href="https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000/">RTX PRO 6000</a> · <a href="https://www.nvidia.com/content/dam/en-zz/Solutions/products/workstations/professional-desktop-gpus/rtx-pro-6000-max-q/workstation-datasheet-blackwell-rtx-pro-6000-max-q-nvidia-3519233.pdf">RTX PRO 6000 Max-Q</a> · <a href="https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-5000/">RTX PRO 5000</a> · <a href="https://www.nvidia.com/en-us/data-center/a100/">NVIDIA A100</a> · <a href="https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html">AMD Strix Halo</a> · <a href="https://www.amd.com/en/products/processors/server/epyc/9005-series/amd-epyc-9755.html">AMD EPYC 9755</a> · <a href="https://www.apple.com/newsroom/2025/03/apple-unveils-new-mac-studio-the-most-powerful-mac-ever/">Apple Mac Studio</a>.</div>
+    <div>Методика и замеры: <a href="https://vllm.ai/blog/2026-06-01-vllm-dgx-spark">vLLM: 1,9k prefill / 22–24 decode</a> · <a href="https://developer.nvidia.com/blog/how-nvidia-dgx-sparks-performance-enables-intensive-ai-tasks/">NVIDIA: gpt-oss на Spark</a> · <a href="https://github.com/ggml-org/llama.cpp/blob/master/benches/dgx-spark/dgx-spark.md">llama.cpp: DGX Spark</a> · <a href="https://github.com/ggml-org/llama.cpp/discussions/15396">llama.cpp: RTX PRO 6000</a> · <a href="https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/">vLLM Automatic Prefix Caching</a> · <a href="https://docs.nvidia.com/dgx/dgx-spark/spark-clustering.html">NVIDIA: кластер Spark</a> · <a href="https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.1/docs/compatibility/compatibilityryz/native_linux/native_linux_compatibility.html">AMD: ROCm 7.1</a>.</div>
+    <div>Модели, бенчмарки и тарифы: <a href="https://huggingface.co/poolside/Laguna-S-2.1">Poolside Laguna S 2.1</a> · <a href="https://github.com/sudoingX/dgx-spark-laguna">Laguna на Spark</a> · <a href="https://huggingface.co/Qwen/Qwen3.6-35B-A3B">Qwen3.6-35B-A3B</a> · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash">DeepSeek-V4-Flash preview</a> · <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731">DeepSeek-V4-Flash-0731</a> · <a href="https://www.tbench.ai/">Terminal-Bench</a> · <a href="https://api-docs.deepseek.com/quick_start/pricing">DeepSeek API pricing</a>.</div>
+  </footer>
+
+</div>
+
