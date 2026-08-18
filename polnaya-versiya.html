@@ -1162,6 +1162,48 @@
       </div>
     </div>
 
+    <h3 style="margin-top:28px">Конкретная материнская плата и хост под четыре карты</h3>
+    <p>Раньше «хост под четыре карты» стоял в сметах одной строкой на 735 000 ₽ без расшифровки. Плата подобрана, состав посчитан.</p>
+    <p><strong><a href="https://www.asrockrack.com/general/productdetail.asp?Model=GENOAD8X-2T%2FBCM">ASRock Rack GENOAD8X-2T/BCM</a></strong> — формат EEB, один сокет SP5 под EPYC 9004/9005, <strong>семь слотов PCIe 5.0 x16 плюс один x8</strong>, два порта 10GbE на борту. Розничная цена за рубежом около $719. Из односокетных плат под SP5 это самый щедрый вариант по слотам; альтернатива — <a href="https://www.newegg.com/gigabyte-mz33-ar1-amd-epyc-9005-9004-series-processors/p/N82E16813145568">Gigabyte MZ33-AR1</a> с четырьмя x16 за $749, ровно под четыре карты без запаса.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Позиция</th><th class="r">Цена</th><th>Примечание</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>Плата ASRock Rack GENOAD8X-2T/BCM</td><td class="r mono">85 098 ₽</td><td class="dim">$719 плюс 40% на ввоз</td></tr>
+          <tr><td>Процессор EPYC 9004, 16–32 ядра</td><td class="r mono">130 000 ₽</td><td class="dim">для инференс-хоста больше не нужно</td></tr>
+          <tr><td>Память 12 × 32 ГБ DDR5 RDIMM</td><td class="r mono">150 000 ₽</td><td class="dim">все двенадцать каналов, иначе полоса режется</td></tr>
+          <tr><td>NVMe 4 ТБ</td><td class="r mono">60 000 ₽</td><td class="dim">под веса моделей</td></tr>
+          <tr><td>Корпус 4U под четыре двухслотовые карты</td><td class="r mono">80 000 ₽</td><td class="dim">с продувом высокого давления</td></tr>
+          <tr><td>Блоки питания 2 × 2000 Вт</td><td class="r mono">90 000 ₽</td><td class="dim">резервирование N+1</td></tr>
+          <tr><td>Охлаждение SP5, вентиляторы</td><td class="r mono">30 000 ₽</td><td class="dim">радиатор под 400 Вт TDP</td></tr>
+          <tr><td>Райзеры, кабели питания GPU</td><td class="r mono">20 000 ₽</td><td class="dim"></td></tr>
+          <tr class="total"><td><strong>Итого хост</strong></td><td class="r mono"><strong>645 098 ₽</strong></td><td class="dim">против 735 000 ₽ в прежних сметах</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">Оценка держалась, расхождение 90 тысяч в меньшую сторону.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка с этим хостом</th><th class="r">Итого</th><th class="r">Остаток</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>4 × A100 40 ГБ PCIe</td><td class="r mono ok"><strong>2 282 698 ₽</strong></td><td class="r mono">717 302 ₽</td></tr>
+          <tr><td>4 × RTX 4090 48 ГБ</td><td class="r mono">2 445 098 ₽</td><td class="r mono">554 902 ₽</td></tr>
+          <tr><td>4 × RTX PRO 6000</td><td class="r mono stop">6 845 098 ₽</td><td class="r stop"><strong>не помещается</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Две детали, которые легко упустить</h3>
+        <p><strong>Память заполняется полностью или полоса теряется.</strong> У EPYC двенадцать каналов, и если поставить шесть модулей вместо двенадцати, пропускная способность падает почти вдвое. Для хоста под видеокарты это не так критично, как для сборки на процессоре, но экономить бессмысленно: разница в цене между шестью и двенадцатью модулями меньше, чем потеря при выгрузке весов.</p>
+        <p><strong>A100 PCIe пассивная, и обычный корпус ей не подходит.</strong> У карты нет собственных вентиляторов — она рассчитана на продув от корпусных вентиляторов высокого давления, как в серверном шасси. В башне или в корпусе с обычными вертушками карта уйдёт в троттлинг за минуты. То же касается любых карт серверной линейки. У RTX 4090 48 ГБ и RTX PRO 6000 охлаждение своё, им подойдёт и башня — но четыре штуки всё равно требуют 4U.</p>
+        <p><strong>Что уточнить у поставщика:</strong> поддерживает ли конкретный корпус 4U четыре двухслотовые карты именно с этой платой, и есть ли к нему райзеры нужной длины. Семь слотов на плате не означают, что в корпус влезут четыре карты — это зависит от расположения слотов и глубины шасси.</p>
+      </div>
+    </div>
+
     <div class="card verdict stop">
       <div class="pad">
         <h3>Почему не 4 × RTX 4090 48 ГБ, хотя по числам они выигрывают</h3>
