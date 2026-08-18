@@ -18,7 +18,7 @@ NODE = {
  'pro5000':dict(n='RTX PRO 5000',      c=979_800,   mem=72,  bw=1344),
  'rtx4090':dict(n='RTX 4090 48 ГБ',    c=450_000,   mem=48,  bw=1008),
  'spark':  dict(n='DGX Spark',         c=583_588,   mem=128, bw=273),
- 'halo':   dict(n='мини-ПК Strix Halo',c=263_000,   mem=128, bw=256),
+ 'halo':   dict(n='мини-ПК Strix Halo',c=263_350,   mem=128, bw=256),  # 229 000 × 1,15 без округления
  'mac':    dict(n='Mac Studio M3 Ultra',c=756_900,  mem=256, bw=819),
  'epyc':   dict(n='EPYC 768 ГБ',       c=835_000,   mem=768, bw=350),
 }
@@ -76,7 +76,7 @@ BUILDS = [
  ('4 × RTX 4090 48 ГБ + хост',         [('rtx4090',4,1)],                           HOST4),
  ('RTX PRO 5000 + хост + 2 Spark',     [('pro5000',1,0),('spark',2,1)],             HOST1+CABLE),
  ('RTX PRO 6000 + хост',               [('pro6000',1,0)],                           HOST1),
- ('4 × DGX Spark в кластере',          [('spark',4,1)],                             CABLE*3),
+ ('4 × DGX Spark в кластере',          [('spark',4,1)],                             0),   # сеть на 4 узла: цена не подтверждена, в смету не включена
  ('5 × DGX Spark независимыми',        [('spark',5,0)],                             0),
  ('11 × мини-ПК Strix Halo',           [('halo',11,0)],                             0),
  ('3 × Mac Studio M3 Ultra',           [('mac',3,0)],                               0),

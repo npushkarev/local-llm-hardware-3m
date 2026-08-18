@@ -27,7 +27,11 @@ CONTEXT_TOKENS = 120_000
 ANSWER_TOKENS = 200
 AGENT_STEPS_PER_HOUR = 20
 CHAT_MIN_TPS = 5.0
+CHAT_REFERENCE_CONCURRENCY = 96
+CHAT_REFERENCE_AVG_TPS = 5.11
+FIT_DISPLAY_HEADROOM_GIB = 5.0
 GIB = 1024**3
+GB_TO_GIB = 10**9 / GIB
 
 LOCAL = "local"
 EXTERNAL = "external"
@@ -71,10 +75,17 @@ class Node:
     name: str
     short: str
     price_rub: int
-    memory_gib: float
+    memory_gb: float
     bandwidth_gbs: float | None
     power: str
+    price_status: str
     qualification: str = ""
+
+    @property
+    def screening_capacity_gib(self) -> float:
+        """Консервативный перевод паспортных GB в GiB для проверки вместимости."""
+
+        return self.memory_gb * GB_TO_GIB
 
 
 NODES = {
@@ -85,6 +96,7 @@ NODES = {
         128,
         273,
         "TDP GB10 140 Вт; БП 240 Вт; потребление из розетки н/д",
+        "розница NIX",
     ),
     "pro6000": Node(
         "RTX PRO 6000 Blackwell WE",
@@ -93,6 +105,7 @@ NODES = {
         96,
         1792,
         "GPU: макс. 600 Вт; хост н/д",
+        "рыночный снимок",
     ),
     "pro5000": Node(
         "RTX PRO 5000 Blackwell 72 ГБ",
@@ -101,14 +114,16 @@ NODES = {
         72,
         1344,
         "GPU: TBP 300 Вт; хост н/д",
+        "рыночный снимок; НДС не уточнён",
     ),
     "rtx4090": Node(
         "RTX 4090 48 ГБ, модифицированная",
         "4090 мод.",
         450_000,
         48,
-        1008,
+        None,
         "450 Вт TGP — только штатная 24 ГБ; модификация/хост н/д",
+        "рыночная оценка модификации",
         "48 ГБ не являются официальной конфигурацией NVIDIA",
     ),
     "halo": Node(
@@ -117,7 +132,9 @@ NODES = {
         263_350,
         128,
         256,
-        "до 120 Вт cTDP платформы; потребление мини-ПК н/д",
+        "TDP референсной Halo-платформы 120 Вт; конкретный мини-ПК/розетка н/д",
+        "229 000 ₽ + 15%, расчёт",
+        "256 ГБ/с и TDP 120 Вт относятся к референсной AMD-платформе; точный OEM SKU не задан",
     ),
     "mac": Node(
         "Mac Studio M3 Ultra 256 ГБ",
@@ -126,6 +143,7 @@ NODES = {
         256,
         819,
         "предельная длительная мощность 480 Вт; LLM-нагрузка н/д",
+        "оценка; точный SKU не задан",
     ),
     "epyc": Node(
         "сервер EPYC 768 ГБ без GPU",
@@ -134,6 +152,7 @@ NODES = {
         768,
         None,
         "н/д: нет BOM и замера из розетки",
+        "оценка; BOM не задан",
         "SKU CPU, память и фактическая полоса не заданы",
     ),
 }
@@ -165,8 +184,8 @@ MODELS = {
         None,
         4,
         256,
-        "48 слоёв DeltaNet не создают растущий KV-кэш",
-        "локальный GGUF из журнала; визуальный проектор не включён",
+        "KV: 16 слоёв полного внимания, 4 головы × 256; ещё 48 слоёв DeltaNet",
+        "размер локального GGUF Q4_K_M; визуальный проектор не включён",
     ),
     "laguna": Model(
         "Laguna S 2.1 Q4_K_M",
@@ -178,8 +197,8 @@ MODELS = {
         512,
         8,
         128,
-        "12 слоёв полного внимания + 36 слоёв со скользящим окном",
-        "локальный публичный GGUF из журнала",
+        "KV: 12 полных + 36 SWA 512, 8 голов × 128",
+        "размер публичной конверсии AtomicChat Q4_K_M",
     ),
     "gptoss": Model(
         "gpt-oss-120b MXFP4",
@@ -191,8 +210,8 @@ MODELS = {
         128,
         8,
         64,
-        "чередование полного внимания и внимания со скользящим окном",
-        "официальный checkpoint OpenAI",
+        "KV: 18 полных + 18 SWA 128, 8 голов × 64",
+        "официальный чекпойнт; MXFP4 — веса MoE-экспертов, не все тензоры",
     ),
 }
 
@@ -277,21 +296,79 @@ def rates_for(node_key: str, model_key: str) -> tuple[Metric, Metric]:
             return NO_PREFILL, Metric(
                 estimate,
                 CALCULATED,
-                "одиночная генерация Spark × паспортная полоса карты / 273",
+                f"одиночная генерация Spark {TAG[reference['gen'].kind]} "
+                "× паспортная полоса карты / 273",
                 "оценка порядка, не бенчмарк",
             )
     return NO_PREFILL, NO_GENERATION
 
 
-# При SLA не менее 5 т/с внешний sweep даёт 96 потоков по 5,11 т/с;
-# 128 потоков уже ниже SLA (4,52 т/с). Это точка только для Spark+gpt-oss.
+# При целевом среднем не менее 5 т/с внешний нагрузочный прогон даёт 96 потоков по
+# 5,11 т/с; 128 потоков уже ниже цели (4,52 т/с). Это не p95/SLA и не
+# переносится с пары Spark+gpt-oss на другие модели или платформы.
 CHAT_SWEEP = {
     ("spark", "gptoss"): Metric(
-        96,
+        CHAT_REFERENCE_CONCURRENCY,
         EXTERNAL,
-        "Dendro Logic: около 1,5 тыс. входных, до 400 выходных токенов, vLLM 26.03, 5,11 т/с",
+        "Dendro Logic: около 1,5 тыс. входных, до 400 выходных токенов, "
+        "vLLM 26.03, в среднем 5,11 т/с",
     )
 }
+
+
+@dataclass(frozen=True)
+class CheckpointFacts:
+    name: str
+    parameters: str
+    repository_gb: int
+
+
+@dataclass(frozen=True)
+class GlmSparkProfile:
+    checkpoint: CheckpointFacts
+    nodes: int
+    stack: str
+    prefill_tps: int
+    generation_tps: tuple[int, int]
+    generation_context_tokens: int
+    short_generation_peak_tps: float
+    source: str
+
+
+GLM_QUANTTRIO = CheckpointFacts(
+    "QuantTrio GLM-5.2 Int4/Int8Mix",
+    "744B / около 40B активных",
+    406,
+)
+GLM_NVIDIA = CheckpointFacts(
+    "NVIDIA GLM-5.2 NVFP4",
+    "753B / 40B активных",
+    465,
+)
+GLM_FOUR_SPARK = GlmSparkProfile(
+    checkpoint=GLM_QUANTTRIO,
+    nodes=4,
+    stack="модифицированный vLLM, NVFP4 KV",
+    prefill_tps=819,
+    generation_tps=(29, 33),
+    generation_context_tokens=53_000,
+    short_generation_peak_tps=42.3,
+    source="0xdfi, публичный профиль одного стенда",
+)
+
+
+def glm_four_spark_summary() -> str:
+    """Краткая подпись без смешения измеренного и официального чекпойнтов."""
+
+    profile = GLM_FOUR_SPARK
+    gen_low, gen_high = profile.generation_tps
+    return (
+        f"{profile.checkpoint.name} {profile.checkpoint.repository_gb} ГБ, "
+        f"{profile.stack}: prefill {profile.prefill_tps} т/с; генерация "
+        f"{gen_low}–{gen_high} т/с при ≈"
+        f"{profile.generation_context_tokens // 1_000} тыс., отдельный короткий "
+        f"пик {str(profile.short_generation_peak_tps).replace('.', ',')} т/с [В]"
+    )
 
 
 @dataclass(frozen=True)
@@ -319,8 +396,9 @@ class Build:
     parts: tuple[Part, ...]
     extras: tuple[ExtraCost, ...]
     topology: str
-    max_pool_gib: float
+    max_pool_gb: float
     power: str
+    purpose: str
     unknown_cost: str = ""
 
     @property
@@ -330,8 +408,8 @@ class Build:
         )
 
     @property
-    def total_memory_gib(self) -> float:
-        return sum(NODES[p.node].memory_gib * p.count for p in self.parts)
+    def total_memory_gb(self) -> float:
+        return sum(NODES[p.node].memory_gb * p.count for p in self.parts)
 
 
 BUILDS = (
@@ -339,82 +417,95 @@ BUILDS = (
         "RTX PRO 6000 + хост + 1 Spark + 1 Halo",
         (Part("pro6000", 1), Part("spark", 1), Part("halo", 1)),
         (HOST_ONE,),
-        "96 + 128 + 128 ГиБ раздельно",
+        "96 + 128 + 128 ГБ раздельно (паспортно)",
         128,
-        "PRO 6000: макс. 600 Вт; Spark: БП 240 Вт; Halo/хост н/д",
+        "PRO 6000: макс. 600 Вт; Spark: БП 240 Вт; Halo: TDP референсной "
+        "платформы 120 Вт; конкретный Halo/хост/розетка н/д",
+        "кандидат на раздельный парк до 96/128 ГБ; решение после замера карты",
     ),
     Build(
         "4 × RTX 4090 48 ГБ, модиф. + хост",
         (Part("rtx4090", 4, "pcie_tp"),),
         (HOST_FOUR,),
-        "4 × 48 ГиБ в одном хосте по PCIe; NVLink нет",
+        "4 × 48 ГБ; теоретически шардируются по PCIe, единый пул не подтверждён; NVLink нет",
         192,
         "4 × 450 Вт TGP штатных 24 ГБ; модификация/хост н/д",
+        "вариант с риском: неофициальная память, нет гарантии производителя и TP-замера",
     ),
     Build(
         "RTX PRO 5000 + хост + 2 Spark + кабель",
         (Part("pro5000", 1), Part("spark", 2, "network_tp")),
         (HOST_ONE, CABLE),
-        "72 ГиБ отдельно + пул 2 × 128 ГиБ по сети",
+        "72 ГБ отдельно + теоретический пул 2 × 128 ГБ по сети",
         256,
         "PRO 5000: 300 Вт TBP; 2 × Spark: БП 240 Вт; хост н/д",
+        "кандидат для класса 128–256 ГБ; запуск и скорость сетевого TP не измерены",
     ),
     Build(
         "RTX PRO 6000 + хост",
         (Part("pro6000", 1),),
         (HOST_ONE,),
-        "96 ГиБ",
+        "96 ГБ паспортно",
         96,
-        "GPU 600 Вт max; хост н/д",
+        "GPU: макс. 600 Вт; хост н/д",
+        "кандидат с высокой паспортной полосой до 96 ГБ; скорость агента не измерена",
     ),
     Build(
         "4 × DGX Spark в сетевом пуле",
         (Part("spark", 4, "network_tp"),),
         (),
-        "пул 4 × 128 ГиБ; топология сети не определена",
+        "теоретический пул 4 × 128 ГБ; топология сети не определена",
         512,
         "4 × БП 240 Вт; потребление из розетки н/д",
+        "класс свыше 256 ГБ; внешний профиль только для "
+        f"{glm_four_spark_summary()}; {GLM_NVIDIA.name} "
+        f"{GLM_NVIDIA.repository_gb} ГБ — скорость н/д",
         "сеть, кабели или коммутатор",
     ),
     Build(
         "2 × DGX Spark + кабель",
         (Part("spark", 2, "network_tp"),),
         (CABLE,),
-        "пул 2 × 128 ГиБ по 200 Гбит/с",
+        "теоретический пул 2 × 128 ГБ по 200 Гбит/с",
         256,
         "2 × БП 240 Вт; потребление из розетки н/д",
+        "класс 128–256 ГБ; линк покупает вместимость, запуск и ускорение не доказаны",
     ),
     Build(
         "5 × DGX Spark независимыми",
         (Part("spark", 5),),
         (),
-        "5 × 128 ГиБ раздельно",
+        "5 × 128 ГБ раздельно (паспортно)",
         128,
         "5 × БП 240 Вт; потребление из розетки н/д",
+        "агрегированная пропускная способность реплик; одна модель не больше 128 ГБ паспортно",
     ),
     Build(
         "11 × мини-ПК Strix Halo",
         (Part("halo", 11),),
         (),
-        "11 × 128 ГиБ раздельно",
+        "11 × 128 ГБ раздельно (паспортно)",
         128,
-        "11 × до 120 Вт cTDP; потребление мини-ПК н/д",
+        "11 × TDP 120 Вт референсной платформы; конкретные мини-ПК/розетка н/д",
+        "много независимых реплик; длинный агентный шаг даже по локальным замерам",
     ),
     Build(
         "3 × Mac Studio M3 Ultra 256 ГБ",
         (Part("mac", 3),),
         (),
-        "3 × 256 ГиБ раздельно",
+        "3 × 256 ГБ раздельно (паспортно)",
         256,
         "3 × 480 Вт предельной длительной мощности; LLM-нагрузка н/д",
+        "много памяти на узел; производительность выбранных моделей не измерена",
     ),
     Build(
         "EPYC 768 ГБ без GPU",
         (Part("epyc", 1),),
         (),
-        "768 ГиБ в одном хосте",
+        "768 ГБ в одном хосте (состав не задан)",
         768,
         "н/д: нет BOM и замера",
+        "максимальная вместимость; без BOM, полосы и бенчмарка производительность н/д",
     ),
 )
 
@@ -437,10 +528,10 @@ def _fit_label(capacity_gib: float, model: Model) -> str:
     if capacity_gib < low:
         return "не влезает"
     if capacity_gib < high:
-        if capacity_gib - low < 5:
+        if capacity_gib - low < FIT_DISPLAY_HEADROOM_GIB:
             return "погранично даже при освобождении SWA; буферы движка н/д"
         return "зависит от освобождения SWA; буферы движка н/д"
-    if capacity_gib - high < 5:
+    if capacity_gib - high < FIT_DISPLAY_HEADROOM_GIB:
         return "впритык; буферы движка н/д"
     return "веса+KV влезают; буферы движка н/д"
 
@@ -449,15 +540,28 @@ def evaluate_part(part: Part, model_key: str) -> PartEvaluation:
     node = NODES[part.node]
     model = MODELS[model_key]
     need_low, need_high = memory_range_gib(model)
+    capacity_gib = node.screening_capacity_gib
 
-    if node.memory_gib >= need_low:
+    if capacity_gib >= need_low:
         pre, gen = rates_for(part.node, model_key)
-        fit = _fit_label(node.memory_gib, model)
-        memory_not_borderline = node.memory_gib - need_high >= 5
+        fit = _fit_label(capacity_gib, model)
+        memory_not_borderline = (
+            capacity_gib - need_high >= FIT_DISPLAY_HEADROOM_GIB
+        )
+        launch_note = (
+            "; запуск на конкретной модификации не проверен"
+            if part.node == "rtx4090"
+            else ""
+        )
         if memory_not_borderline:
-            placement = f"{node.short}: {part.count} репл.; {fit}"
+            placement = (
+                f"{node.short}: по номинальному объёму {part.count} репл.; "
+                f"{fit}{launch_note}"
+            )
         else:
-            placement = f"{node.short}: размещение не подтверждено ({fit})"
+            placement = (
+                f"{node.short}: размещение не подтверждено ({fit}){launch_note}"
+            )
         return PartEvaluation(
             part,
             placement,
@@ -472,19 +576,21 @@ def evaluate_part(part: Part, model_key: str) -> PartEvaluation:
 
     if part.mode in {"pcie_tp", "network_tp"}:
         # Берём осторожную верхнюю границу KV. Runtime всё равно неизвестен.
-        devices = max(2, math.ceil(need_high / node.memory_gib))
+        devices = max(2, math.ceil(need_high / capacity_gib))
         if devices <= part.count:
             replicas = part.count // devices
             link = "PCIe TP" if part.mode == "pcie_tp" else "сетевой TP"
             placement = (
-                f"{node.short}: {replicas} × {link}{devices}; "
-                f"{_fit_label(node.memory_gib * devices, model)}; скорость н/д"
+                f"{node.short}: по номинальному объёму возможно "
+                f"{replicas} × {link}{devices}; "
+                f"{_fit_label(capacity_gib * devices, model)}; "
+                "запуск и скорость не проверены"
             )
             return PartEvaluation(
                 part,
                 placement,
                 True,
-                node.memory_gib * devices - need_high >= 5,
+                capacity_gib * devices - need_high >= FIT_DISPLAY_HEADROOM_GIB,
                 "tp",
                 replicas,
                 devices,
@@ -492,11 +598,12 @@ def evaluate_part(part: Part, model_key: str) -> PartEvaluation:
                 NO_GENERATION,
             )
 
-        if node.memory_gib * part.count >= need_low:
+        if capacity_gib * part.count >= need_low:
             link = "PCIe TP" if part.mode == "pcie_tp" else "сетевой TP"
             return PartEvaluation(
                 part,
-                f"{node.short}: {link}{part.count}, вместимость зависит от SWA и буферов; скорость н/д",
+                f"{node.short}: по номинальному объёму возможен {link}{part.count}, "
+                "но вместимость зависит от SWA и буферов; запуск и скорость не проверены",
                 True,
                 False,
                 "tp",
@@ -533,6 +640,14 @@ def _fmt_number(value: float, decimals: int = 0) -> str:
 def _fmt_rate(metric: Metric) -> str:
     if metric.value is None:
         return "н/д"
+    if metric.kind == CALCULATED:
+        if "[З]" in metric.source:
+            tag = "[Р из З]"
+        elif "[В]" in metric.source:
+            tag = "[Р из В]"
+        else:
+            tag = TAG[CALCULATED]
+        return f"≈{_fmt_number(metric.value)} {tag}"
     return f"{_fmt_number(metric.value, 1)} {TAG[metric.kind]}"
 
 
@@ -584,7 +699,7 @@ def model_cell(build: Build, model_key: str) -> list[str]:
         best_item, best_step = min(known, key=lambda pair: pair[1])
         best_prefix = "лучший известный " if unknown_agent_pool else ""
         step_line = (
-            f"шаг: {best_prefix}{_fmt_number(best_step, 1)} с "
+            f"линейная оценка шага: {best_prefix}≈{_fmt_number(best_step, 1)} с "
             f"{_derived_tag(best_item.pre, best_item.gen)} ({NODES[best_item.part.node].short})"
         )
         agent_equivalent = sum(
@@ -602,12 +717,12 @@ def model_cell(build: Build, model_key: str) -> list[str]:
             pinned = f"{pinned_sessions}"
             scope = ""
         agent_line = (
-            f"агент: {_fmt_number(agent_equivalent, 2)} экв. [Р]{scope}; "
-            f"закреплённых сессий {pinned}"
+            f"агентная нагрузка: ≈{_fmt_number(agent_equivalent, 2)} экв. [Р]{scope}; "
+            f"закреплённых сессий {pinned} [Р по точечной оценке]"
         )
     else:
-        step_line = "шаг: н/д (нет prefill/TP-замера)"
-        agent_line = "агент: н/д"
+        step_line = "линейная оценка шага: н/д (нет prefill/TP-замера)"
+        agent_line = "агентная нагрузка: н/д"
 
     chat_known = 0.0
     chat_sources = 0
@@ -626,17 +741,26 @@ def model_cell(build: Build, model_key: str) -> list[str]:
             chat_unknown_pool = True
 
     if chat_known:
-        # Sweep подтверждает рабочую точку 96, но не точную границу между
-        # 96 (5,11 т/с) и 128 (4,52 т/с), поэтому это всегда нижняя граница.
-        lower_bound = "≥"
-        tag = "[В]" if chat_sources == 1 else "[Р из В]"
+        # Sweep подтверждает одну рабочую точку, но не SLA и не точную
+        # границу ёмкости между 96 (5,11 т/с) и 128 (4,52 т/с).
         suffix = " (только известные пулы)" if chat_unknown_pool else ""
+        if chat_sources == 1:
+            observed = f"{_fmt_number(chat_known)} активных в измеренной точке [В]"
+        else:
+            observed = (
+                f"{CHAT_REFERENCE_CONCURRENCY} × {chat_sources} = "
+                f"{_fmt_number(chat_known)} активных "
+                "[Р из В]"
+            )
         chat_line = (
-            f"чат ≥{_fmt_number(CHAT_MIN_TPS, 0)} т/с: "
-            f"{lower_bound}{_fmt_number(chat_known, 0)} {tag}{suffix}"
+            f"чат (1,5k/≤400; целевое среднее ≥{_fmt_number(CHAT_MIN_TPS)} т/с): "
+            f"{observed}{suffix}; в опорном прогоне "
+            f"{_fmt_number(CHAT_REFERENCE_AVG_TPS, 2)} т/с"
         )
     else:
-        chat_line = f"чат ≥{_fmt_number(CHAT_MIN_TPS, 0)} т/с: н/д"
+        chat_line = (
+            f"чат (1,5k/≤400; среднее ≥{_fmt_number(CHAT_MIN_TPS, 0)} т/с): н/д"
+        )
 
     return [
         f"размещение: {placement}",
@@ -661,6 +785,8 @@ def _model_header(model_key: str) -> list[str]:
         model.name,
         model.parameters,
         f"веса { _fmt_number(model.weights_gib, 2) } ГиБ",
+        model.weights_note,
+        model.architecture_note,
         f"KV 120k {kv} ГиБ [Р]",
         f"веса+KV {memory} ГиБ; буферы движка н/д",
     ]
@@ -674,17 +800,50 @@ def _cost_cell(build: Build) -> list[str]:
     else:
         price = f"{_fmt_number(build.price_rub)} ₽ [Р]"
         remainder = f"остаток {_fmt_number(balance)} ₽"
-    return [price, remainder, "цены не являются КП"]
+    statuses = [
+        f"{NODES[part.node].short}: {NODES[part.node].price_status}"
+        for part in build.parts
+    ]
+    statuses.extend(f"{item.name}: {item.status}" for item in build.extras)
+    return [
+        price,
+        remainder,
+        "основания: " + "; ".join(statuses),
+        "срез 18.08.2026; ни одна цена не является КП",
+    ]
 
 
 def _memory_cell(build: Build) -> list[str]:
-    price_per_pool_gib = build.price_rub / build.max_pool_gib
+    price_per_pool_gb = build.price_rub / build.max_pool_gb
     prefix = "от " if build.unknown_cost else ""
-    return [
+    seen: set[str] = set()
+    nodes = []
+    for part in build.parts:
+        if part.node not in seen:
+            seen.add(part.node)
+            nodes.append(NODES[part.node])
+    bandwidths = "; ".join(
+        f"{node.short}: "
+        + (f"{_fmt_number(node.bandwidth_gbs)} ГБ/с" if node.bandwidth_gbs else "н/д")
+        for node in nodes
+    )
+    screening_capacities = "; ".join(
+        f"{node.short}: {_fmt_number(node.memory_gb)} ГБ → "
+        f"{_fmt_number(node.screening_capacity_gib, 2)} ГиБ"
+        for node in nodes
+    )
+    result = [
         build.topology,
-        f"всего {_fmt_number(build.total_memory_gib)}; крупнейший пул {_fmt_number(build.max_pool_gib)} ГиБ",
-        f"{prefix}{_fmt_number(price_per_pool_gib)} ₽/ГиБ крупнейшего пула [Р]",
+        f"паспортно всего {_fmt_number(build.total_memory_gb)} ГБ; "
+        f"наибольшая логическая ёмкость {_fmt_number(build.max_pool_gb)} ГБ",
+        f"для консервативной проверки до резервов: {screening_capacities}",
+        f"паспортная полоса: {bandwidths}",
+        f"{prefix}{_fmt_number(price_per_pool_gb)} ₽/ГБ логической ёмкости [Р]",
     ]
+    qualifications = [node.qualification for node in nodes if node.qualification]
+    if qualifications:
+        result.append("оговорка: " + "; ".join(qualifications))
+    return result
 
 
 def _markdown_cell(lines: Iterable[str]) -> str:
@@ -699,41 +858,62 @@ def _html_cell(lines: Iterable[str], header: bool = False) -> str:
 
 METHOD_NOTES = (
     "[З] — замер на собственном стенде; [В] — внешний замер точной пары модель/платформа; [Р] — расчёт. «н/д» означает, что число не подставлялось.",
-    "Шаг агента [Р] = 120 000 / prefill + 200 / скорость генерации при полном промахе кэша префикса. Это экстраполяция однопоточного llama-bench, а не замер шага на глубине 120 тыс. токенов.",
-    "Агентный эквивалент — агрегированная пропускная способность при 20 шагах/ч и 100% загрузке. Дробь не является человеком. «Закреплённая сессия» требует, чтобы один узел сам выдерживал 20 последовательных шагов/ч; общая очередь и запас SLA не учтены.",
-    "Чатовая ёмкость приводится только для Spark + gpt-oss: 96 одновременно активных ответов по 5,11 т/с. Нагрузка внешнего теста — около 1,5 тыс. входных и до 400 выходных токенов, vLLM 26.03. Переноса по одиночной генерации нет.",
+    "Линейная оценка шага агента [Р] = 120 000 / prefill + 200 / скорость генерации при полном промахе кэша префикса. Это экстраполяция однопоточного llama-bench, а не замер шага на глубине 120 тыс. токенов.",
+    "Агентный эквивалент — агрегированная пропускная способность при 20 шагах/ч и 100% загрузке. Дробь не является человеком. «Закреплённая сессия» требует, чтобы один узел по точечной линейной оценке укладывался в 180 с; результат около порога неустойчив, общая очередь и запас SLA не учтены.",
+    "Измеренная рабочая точка чатовой нагрузки приводится только для Spark + gpt-oss: 96 одновременно активных ответов в среднем по 5,11 т/с; при 128 было 4,52 т/с. Это не гарантия на пользователя, p95 или точная граница ёмкости. Нагрузка — около 1,5 тыс. входных и до 400 выходных токенов, контейнер NVIDIA vLLM 26.03. Переноса по одиночной генерации нет.",
     "В том же тесте плотная Nemotron 49B выдержала 32 потока по 5,08 т/с, но Qwen имеет гибридное внимание, а Laguna — другую MoE-архитектуру. Поэтому даже эта плотная опора на них не переносится.",
     "KV рассчитан для одного потока и FP16/BF16. Нижняя граница освобождает историю за скользящим окном, верхняя хранит полный кэш. Буферы движка, MTP, визуальный проектор, фиксированные состояния и дополнительные одновременные последовательности не включены.",
-    "Prefill видеокарт, Mac и EPYC не выводится из полосы памяти: без бенчмарка стоит «н/д». Оценка G видеокарт по полосе показана только как порядок и не участвует в расчёте агентов или чатов.",
-    "Универсального КПД TP нет. 819 т/с на 4 × Spark (vLLM/NVFP4) и 213 т/с на 2 × Spark (llama.cpp/RPC/IQ1) — разные профили; они не задают коэффициент ни для сети, ни для PCIe.",
+    "Железо указано в паспортных GB, файлы и KV — в GiB. Для предварительной проверки вместимости GB консервативно переведены по 10^9 / 2^30; память ОС, ECC/резерв платформы и аллокации движка затем не вычтены. Запас менее 5 GiB помечен как пограничный; это редакционный порог, а не гарантия запуска.",
+    "Локальные llama-bench могли пересекаться по времени с другой нагрузкой. Их следует читать как нижние границы для конкретного запуска, но не как сопоставимый гарантированный минимум между платформами.",
+    "Чтение контекста (prefill) видеокарт, Mac и EPYC не выводится из полосы памяти: без бенчмарка стоит «н/д». Оценка генерации CUDA-карт по полосе показана только как порядок и не участвует в расчёте агентов или чатов.",
+    f"Универсального КПД TP нет. На 4 × Spark измерен только профиль {glm_four_spark_summary()}; 213 т/с на 2 × Spark относится к llama.cpp/RPC/IQ1. Это разные профили, они не задают коэффициент ни для сети, ни для PCIe.",
+    f"GLM-5.2 не смешивается между чекпойнтами: измерен {GLM_QUANTTRIO.name}, {GLM_QUANTTRIO.parameters}, репозиторий {GLM_QUANTTRIO.repository_gb} ГБ; официальная карточка {GLM_NVIDIA.name} указывает {GLM_NVIDIA.parameters} и около {GLM_NVIDIA.repository_gb} ГБ, но его скорость на 4 × Spark не измерена.",
     "Питание — паспортные TDP/TBP/мощность БП, а не измеренное потребление сборки из розетки. Для модифицированной 4090 48 ГБ значения штатной 24-ГБ карты не гарантированы.",
+    "₽/ГБ делит цену всей сборки на наибольшую логическую ёмкость. Для PCIe/сетевого TP она теоретическая до подтверждения запуска. Метрика показывает стоимость вместимости, но не скорость, доступный движку объём или совокупную стоимость владения.",
     "₽/агент и ₽/чат намеренно не выводятся: почти все знаменатели не измерены, а агентный эквивалент не равен числу сотрудников.",
 )
 
 
 OPEN_ITEMS = (
-    "prefill, шаг 120k и тест конкурентности на RTX PRO 6000/5000 и конкретной модифицированной RTX 4090 48 ГБ;",
+    "чтение контекста, шаг 120k и тест конкурентности на RTX PRO 6000/5000 и конкретной модифицированной RTX 4090 48 ГБ;",
     "TP-бенчмарки той же модели и кванта: отдельно PCIe внутри хоста и сеть 200 Гбит/с между Spark;",
     "фактические буферы и политика SWA/KV каждого выбранного движка, включая несколько одновременных контекстов;",
+    "фактически доступная движку память после ОС/ECC/резервов и резидентный размер каждого GGUF/чекпойнта;",
+    "профиль реальной длины контекста, доля попаданий в кэш префикса и проверка допущения 20 агентных шагов/ч;",
+    "чтение gpt-oss на Spark; нагрузочный прогон Qwen/Laguna на Spark и Halo; gpt-oss на Halo; выбранные модели на Mac;",
     "потребление полных сборок из розетки под длительной LLM-нагрузкой;",
     "КП с точными SKU, НДС, гарантией и сроком: карты, хосты, Halo, Mac, EPYC, кабели и сеть четырёх Spark;",
-    "BOM EPYC и STREAM-замер памяти; паспорт и гарантия модификатора RTX 4090 48 ГБ.",
+    "состав (BOM) EPYC и STREAM-замер памяти; паспорт и гарантия модификатора RTX 4090 48 ГБ;",
+    "точная ревизия, формат и загруженный объём чекпойнта GLM-5.2 до выбора сети на четыре Spark.",
 )
 
 
 SOURCES = (
     ("исходные замеры стенда", "zamery-src.md"),
+    ("основания цен из готового документа", "README-src.md"),
+    ("DGX Spark — цена NIX на дату среза", "https://www.nix.ru/autocatalog/other_computers/NVIDIA-DGX-Spark-4TB-940-54242-0006-000-ARM-v92-A-GB10-128-4TbSSD-NVIDIA-Grace-Blackwell-WiFi-BT-DGX-OS_960944.html"),
     ("DGX Spark — спецификация NVIDIA", "https://docs.nvidia.com/dgx/dgx-spark/hardware.html"),
+    ("DGX Spark — ConnectX-7 200 Гбит/с", "https://www.nvidia.com/en-us/products/workstations/dgx-spark/"),
     ("RTX PRO 6000 — спецификация NVIDIA", "https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000/"),
     ("RTX PRO 5000 — datasheet NVIDIA", "https://www.nvidia.com/content/dam/en-zz/Solutions/products/workstations/professional-desktop-gpus/rtx-pro-5000-blackwell/workstation-datasheet-blackwell-rtx-pro-5000-gtc25-spring-nvidia-3658700.pdf"),
     ("RTX 4090 24 ГБ — штатная спецификация NVIDIA", "https://www.nvidia.com/en-eu/geforce/graphics-cards/40-series/rtx-4090/"),
     ("Ryzen AI Max+ 395 — спецификация AMD", "https://www.amd.com/en/products/processors/desktops/ryzen/ryzen-ai-halo/ryzen-ai-max-plus-395.html"),
-    ("Mac Studio M3 Ultra — спецификация Apple", "https://www.apple.com/mac-studio/specs/"),
+    ("Mac Studio M3 Ultra — спецификация Apple", "https://support.apple.com/en-us/122211"),
     ("Qwen3.8-27B — карточка модели", "https://huggingface.co/Qwen/Qwen3.8-27B"),
+    ("Qwen3.8-27B — конфигурация внимания", "https://huggingface.co/Qwen/Qwen3.8-27B/blob/main/config.json"),
     ("Laguna S 2.1 — карточка модели", "https://huggingface.co/poolside/Laguna-S-2.1"),
+    ("Laguna S 2.1 — конфигурация внимания", "https://huggingface.co/poolside/Laguna-S-2.1/blob/main/config.json"),
+    ("Laguna S 2.1 Q4_K_M — публичная конверсия GGUF", "https://huggingface.co/AtomicChat/Laguna-S-2.1-GGUF"),
     ("gpt-oss-120b — карточка OpenAI", "https://openai.com/index/gpt-oss-model-card/"),
+    ("gpt-oss-120b — официальный чекпойнт", "https://huggingface.co/openai/gpt-oss-120b"),
+    ("gpt-oss-120b — конфигурация внимания", "https://huggingface.co/openai/gpt-oss-120b/blob/main/config.json"),
     ("тест конкурентности DGX Spark", "https://dendro-logic.com/engineering/nvidia-dgx-spark-concurrency-benchmark/"),
-    ("GLM-5.2 на 4 × DGX Spark — воспроизводимый публичный профиль", "https://github.com/0xdfi/GLM-5.2-1M-4x-DGX-Spark"),
+    ("GLM-5.2 на 4 × DGX Spark — публичный профиль одного стенда", "https://github.com/0xdfi/GLM-5.2-1M-4x-DGX-Spark"),
+    ("точная карточка GLM-бенчмарка 0xdfi", "https://huggingface.co/0xdfi/GLM-5.2-1M-context-NVFP4-4x-DGX-Spark"),
+    ("QuantTrio GLM-5.2 Int4/Int8Mix — чекпойнт бенчмарка", "https://huggingface.co/QuantTrio/GLM-5.2-Int4-Int8Mix/tree/main"),
+    ("GLM-5.2 — официальная базовая модель Z.ai", "https://huggingface.co/zai-org/GLM-5.2"),
+    ("GLM-5.2 NVFP4 — официальный чекпойнт NVIDIA", "https://huggingface.co/nvidia/GLM-5.2-NVFP4"),
+    ("GLM-5.2 на 2 × DGX Spark — другой llama.cpp/RPC-профиль", "https://forums.developer.nvidia.com/t/academic-glm-5-2-on-2x-dgx-spark-gb10-nodes-crazy-1-bit-ud-iq1-s-rpc-llama-cpp-256k-context-8-tok-s/374523"),
 )
 
 
@@ -765,11 +945,28 @@ def validate() -> None:
     assert BUILDS[4].unknown_cost
     assert NODES["halo"].price_rub == round(229_000 * 1.15)
     assert CHAT_SWEEP[("spark", "gptoss")].value == 96
+    assert math.isclose(NODES["pro5000"].screening_capacity_gib, 67.055225, rel_tol=1e-8)
+    assert GLM_FOUR_SPARK.checkpoint is GLM_QUANTTRIO
+    assert GLM_FOUR_SPARK.checkpoint is not GLM_NVIDIA
+    assert GLM_FOUR_SPARK.generation_context_tokens == 53_000
+    assert GLM_FOUR_SPARK.generation_tps == (29, 33)
+    assert "NVIDIA" not in glm_four_spark_summary()
+
+    # Граничные размещения не должны незаметно стать подтверждёнными после
+    # изменения конфигов моделей или единиц памяти.
+    assert not evaluate_part(Part("pro5000", 1), "laguna").viable
+    assert not evaluate_part(Part("pro5000", 1), "gptoss").memory_not_borderline
+    assert not evaluate_part(Part("pro6000", 1), "laguna").memory_not_borderline
+    assert step_seconds(*rates_for("spark", "laguna")) > 180
+    assert step_seconds(*rates_for("spark", "qwen")) < 180
 
     for card in CUDA_CARDS:
         for model_key in MODELS:
             pre, _ = rates_for(card, model_key)
             assert pre.value is None and pre.kind == UNAVAILABLE
+            if card == "rtx4090":
+                _, gen = rates_for(card, model_key)
+                assert gen.value is None and gen.kind == UNAVAILABLE
 
 
 def render_markdown(rows: Iterable[Build] | None = None) -> str:
@@ -778,7 +975,7 @@ def render_markdown(rows: Iterable[Build] | None = None) -> str:
     validate()
     builds = tuple(rows) if rows is not None else BUILDS
     headers = [
-        ["Сборка"],
+        ["Сборка и назначение"],
         ["Цена и бюджет"],
         ["Пулы памяти"],
         ["Питание, паспорт / н/д"],
@@ -789,9 +986,10 @@ def render_markdown(rows: Iterable[Build] | None = None) -> str:
     lines = [
         "## Единая сводная таблица",
         "",
-        f"Агентный сценарий: {_fmt_number(CONTEXT_TOKENS)} токенов контекста, "
-        f"{ANSWER_TOKENS} токенов ответа. Чатная ёмкость использует отдельный "
-        f"профиль 1,5k/400 токенов. Бюджет {_fmt_number(BUDGET_RUB)} ₽. "
+        f"Агентный расчётный сценарий: {_fmt_number(CONTEXT_TOKENS)} токенов контекста, "
+        f"{ANSWER_TOKENS} токенов ответа. Измеренная рабочая точка чата использует "
+        f"отдельный профиль около 1,5k входных / до 400 выходных токенов. "
+        f"Бюджет {_fmt_number(BUDGET_RUB)} ₽. "
         + "Все производительные числа помечены по происхождению.",
         "",
         "| " + " | ".join(_markdown_cell(header) for header in headers) + " |",
@@ -800,7 +998,7 @@ def render_markdown(rows: Iterable[Build] | None = None) -> str:
 
     for build in builds:
         cells = [
-            [build.name],
+            [build.name, build.purpose],
             _cost_cell(build),
             _memory_cell(build),
             [build.power],
@@ -825,7 +1023,7 @@ def render_html(rows: Iterable[Build] | None = None) -> str:
     validate()
     builds = tuple(rows) if rows is not None else BUILDS
     headers = [
-        ["Сборка"],
+        ["Сборка и назначение"],
         ["Цена и бюджет"],
         ["Пулы памяти"],
         ["Питание, паспорт / н/д"],
@@ -837,18 +1035,20 @@ def render_html(rows: Iterable[Build] | None = None) -> str:
         '<section class="llm-procurement-summary">',
         "<h2>Единая сводная таблица</h2>",
         (
-            f"<p>Агентный сценарий: {_fmt_number(CONTEXT_TOKENS)} токенов контекста, "
-            f"{ANSWER_TOKENS} токенов ответа. Чатная ёмкость использует отдельный "
-            f"профиль 1,5k/400 токенов. Бюджет {_fmt_number(BUDGET_RUB)} ₽. "
+            f"<p>Агентный расчётный сценарий: {_fmt_number(CONTEXT_TOKENS)} токенов контекста, "
+            f"{ANSWER_TOKENS} токенов ответа. Измеренная рабочая точка чата использует "
+            f"отдельный профиль около 1,5k входных / до 400 выходных токенов. "
+            f"Бюджет {_fmt_number(BUDGET_RUB)} ₽. "
             "Все производительные числа помечены по происхождению.</p>"
         ),
         "<table>",
+        "<caption>Сборки, бюджет, память и проверяемые метрики трёх моделей</caption>",
         "<thead><tr>" + "".join(_html_cell(header, True) for header in headers) + "</tr></thead>",
         "<tbody>",
     ]
     for build in builds:
         cells = [
-            [build.name],
+            [build.name, build.purpose],
             _cost_cell(build),
             _memory_cell(build),
             [build.power],
