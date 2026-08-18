@@ -9,7 +9,7 @@
 BUDGET = 3_000_000
 
 # ── ПОРОГИ КОМФОРТА. Задаются здесь, а не подгоняются под результат.
-COPILOT = dict(fresh=100, out=20,   limit=0.5,  per_hour=120)   # ≤0,5 с на подсказку
+COPILOT = dict(fresh=100, out=50,   limit=1.0,  per_hour=120)   # многострочная подсказка ≤1 с
 AGENT   = dict(fresh=120_000, out=200, limit=60, per_hour=20)   # ≤60 с на шаг
 CHAT    = dict(fresh=2_000, out=500, min_tps=5.0, per_hour=30)  # ≥5 т/с на человека
 

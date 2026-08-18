@@ -645,7 +645,7 @@
       <table>
         <thead><tr><th>Модель</th><th class="r">1 Spark<br><span class="dim">расчёт</span></th><th class="r">1 Spark<br><span class="dim">наш замер</span></th><th class="r">2 Spark<br><span class="dim">суммарно</span></th><th class="r">4 Spark<br><span class="dim">суммарно</span></th><th class="r">Mac Studio</th><th class="r">EPYC 768</th><th class="r">4 × 4090</th><th class="r">RTX PRO 6000</th></tr></thead>
         <tbody>
-          <tr><td>Qwen3.6-35B-A3B</td><td class="r mono">112</td><td class="r mono ok">76,6</td><td class="r mono">193</td><td class="r mono">353</td><td class="r mono">337</td><td class="r mono">129</td><td class="r mono">1423</td><td class="r mono">738</td></tr>
+          <tr><td>Qwen3.6-35B-A3B</td><td class="r mono">112</td><td class="r mono ok">76,6</td><td class="r mono">193</td><td class="r mono">155</td><td class="r mono">337</td><td class="r mono">129</td><td class="r mono">1423</td><td class="r mono">738</td></tr>
           <tr><td>gpt-oss-120b</td><td class="r mono">68</td><td class="r dim">—</td><td class="r mono">117</td><td class="r mono">215</td><td class="r mono">205</td><td class="r mono">79</td><td class="r mono">864</td><td class="r mono">448</td></tr>
           <tr class="hi"><td><strong>Laguna S 2.1</strong></td><td class="r mono">43</td><td class="r mono ok">30,2</td><td class="r mono">74</td><td class="r mono">136</td><td class="r mono">130</td><td class="r mono">50</td><td class="r mono">550</td><td class="r mono">285</td></tr>
           <tr><td>Qwen3.8-27B <span class="dim">плотная</span></td><td class="r mono stop">3 <span class="dim">F16</span></td><td class="r mono ok">12,3 <span class="dim">Q4</span></td><td class="r mono">6</td><td class="r mono">11</td><td class="r mono">10</td><td class="r mono">4</td><td class="r mono">44</td><td class="r mono">23</td></tr>
@@ -832,7 +832,7 @@
     <div class="card verdict ok">
       <div class="pad">
         <h3>Сводная таблица: три режима работы и порог комфорта для каждого</h3>
-        <p>Числа в колонках — <strong>сколько человек сборка обслуживает, оставаясь комфортной</strong>. Пороги заданы заранее, а не подогнаны под результат: подсказка копилота должна приходить за полсекунды, шаг агента — за минуту, собеседник в чате должен получать не меньше пяти токенов в секунду. Значок ⚠ означает, что порог не выдержан: людей сборка обслужит, но работать с ней будет некомфортно.</p>
+        <p>Числа в колонках — <strong>сколько человек сборка обслуживает, оставаясь комфортной</strong>. Пороги заданы заранее, а не подогнаны под результат: многострочная подсказка копилота должна приходить за секунду, шаг агента — за минуту, собеседник в чате должен получать не меньше пяти токенов в секунду. Значок ⚠ означает, что порог не выдержан: людей сборка обслужит, но работать с ней будет некомфортно.</p>
       </div>
     </div>
 
@@ -840,15 +840,15 @@
   <table>
     <thead><tr><th>Сборка</th><th class="r">Цена</th><th class="r">Остаток</th><th class="r">Крупнейший<br>пул</th><th class="r">Копилот<br><span class="dim">≤0,5 с на подсказку</span></th><th class="r">Агент<br><span class="dim">≤60 с на шаг</span></th><th class="r">Чат<br><span class="dim">≥5 т/с на человека</span></th></tr></thead>
     <tbody>
-      <tr><td>RTX PRO 6000 + хост + Spark + Halo</td><td class="r mono">2 796 588 ₽</td><td class="r mono">203 412 ₽</td><td class="r mono">128 ГБ</td><td class="r mono ok"><strong>668</strong><br><span class="dim">0.06 с</span></td><td class="r mono ok"><strong>13</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>56</strong><br><span class="dim">2.77 с</span></td></tr>
-      <tr><td>4 × RTX 4090 48 ГБ + хост</td><td class="r mono">2 535 000 ₽</td><td class="r mono">465 000 ₽</td><td class="r mono">192 ГБ</td><td class="r mono ok"><strong>980</strong><br><span class="dim">0.12 с</span></td><td class="r mono ok"><strong>11</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>76</strong><br><span class="dim">1.58 с</span></td></tr>
-      <tr><td>RTX PRO 5000 + хост + 2 Spark</td><td class="r mono">2 576 976 ₽</td><td class="r mono">423 024 ₽</td><td class="r mono">256 ГБ</td><td class="r mono ok"><strong>574</strong><br><span class="dim">0.08 с</span></td><td class="r mono stop"><strong>2</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>12</strong><br><span class="dim">19 с</span></td></tr>
-      <tr><td>RTX PRO 6000 + хост</td><td class="r mono">1 950 000 ₽</td><td class="r mono">1 050 000 ₽</td><td class="r mono">96 ГБ</td><td class="r mono ok"><strong>529</strong><br><span class="dim">0.06 с</span></td><td class="r mono ok"><strong>11</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>43</strong><br><span class="dim">2.77 с</span></td></tr>
-      <tr><td>4 × DGX Spark в кластере</td><td class="r mono">2 424 352 ₽</td><td class="r mono">575 648 ₽</td><td class="r mono">512 ГБ</td><td class="r mono ok"><strong>353</strong><br><span class="dim">0.34 с</span></td><td class="r mono stop"><strong>4</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>25</strong><br><span class="dim">19 с</span></td></tr>
-      <tr><td>5 × DGX Spark независимыми</td><td class="r mono">2 917 940 ₽</td><td class="r mono">82 060 ₽</td><td class="r mono">128 ГБ</td><td class="r mono ok"><strong>442</strong><br><span class="dim">0.34 с</span></td><td class="r mono stop"><strong>5</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>31</strong><br><span class="dim">19 с</span></td></tr>
-      <tr><td>11 × мини-ПК Strix Halo</td><td class="r mono">2 893 000 ₽</td><td class="r mono">107 000 ₽</td><td class="r mono">128 ГБ</td><td class="r mono stop"><strong>558</strong><br><span class="dim">0.59 с · не комфортно</span></td><td class="r mono stop"><strong>6</strong><br><span class="dim">5.7 мин · не комфортно</span></td><td class="r mono ok"><strong>73</strong><br><span class="dim">18 с</span></td></tr>
-      <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono">2 270 700 ₽</td><td class="r mono">729 300 ₽</td><td class="r mono">256 ГБ</td><td class="r mono stop"><strong>138</strong><br><span class="dim">0.65 с · не комфортно</span></td><td class="r mono stop"><strong>1</strong><br><span class="dim">11.1 мин · не комфортно</span></td><td class="r mono ok"><strong>22</strong><br><span class="dim">17 с</span></td></tr>
-      <tr><td>EPYC 768 ГБ без карты</td><td class="r mono">835 000 ₽</td><td class="r mono">2 165 000 ₽</td><td class="r mono">768 ГБ</td><td class="r mono stop"><strong>48</strong><br><span class="dim">0.63 с · не комфортно</span></td><td class="r mono stop"><strong>0</strong><br><span class="dim">8.1 мин · не комфортно</span></td><td class="r mono ok"><strong>6</strong><br><span class="dim">21 с</span></td></tr>
+      <tr><td>RTX PRO 6000 + хост + Spark + Halo</td><td class="r mono">2 796 588 ₽</td><td class="r mono">203 412 ₽</td><td class="r mono">128 ГБ</td><td class="r mono ok"><strong>311</strong><br><span class="dim">0.12 с</span></td><td class="r mono ok"><strong>13</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>56</strong><br><span class="dim">2.77 с</span></td></tr>
+      <tr><td>4 × RTX 4090 48 ГБ + хост</td><td class="r mono">2 535 000 ₽</td><td class="r mono">465 000 ₽</td><td class="r mono">192 ГБ</td><td class="r mono ok"><strong>499</strong><br><span class="dim">0.24 с</span></td><td class="r mono ok"><strong>11</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>76</strong><br><span class="dim">1.58 с</span></td></tr>
+      <tr><td>RTX PRO 5000 + хост + 2 Spark</td><td class="r mono">2 576 976 ₽</td><td class="r mono">423 024 ₽</td><td class="r mono">256 ГБ</td><td class="r mono ok"><strong>261</strong><br><span class="dim">0.16 с</span></td><td class="r mono stop"><strong>2</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>12</strong><br><span class="dim">19 с</span></td></tr>
+      <tr><td>RTX PRO 6000 + хост</td><td class="r mono">1 950 000 ₽</td><td class="r mono">1 050 000 ₽</td><td class="r mono">96 ГБ</td><td class="r mono ok"><strong>244</strong><br><span class="dim">0.12 с</span></td><td class="r mono ok"><strong>11</strong><br><span class="dim">16 с</span></td><td class="r mono ok"><strong>43</strong><br><span class="dim">2.77 с</span></td></tr>
+      <tr><td>4 × DGX Spark в кластере</td><td class="r mono">2 424 352 ₽</td><td class="r mono">575 648 ₽</td><td class="r mono">512 ГБ</td><td class="r mono ok"><strong>155</strong><br><span class="dim">0.77 с</span></td><td class="r mono stop"><strong>4</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>25</strong><br><span class="dim">19 с</span></td></tr>
+      <tr><td>5 × DGX Spark независимыми</td><td class="r mono">2 917 940 ₽</td><td class="r mono">82 060 ₽</td><td class="r mono">128 ГБ</td><td class="r mono ok"><strong>194</strong><br><span class="dim">0.77 с</span></td><td class="r mono stop"><strong>5</strong><br><span class="dim">3.0 мин · не комфортно</span></td><td class="r mono ok"><strong>31</strong><br><span class="dim">19 с</span></td></tr>
+      <tr><td>11 × мини-ПК Strix Halo</td><td class="r mono">2 893 000 ₽</td><td class="r mono">107 000 ₽</td><td class="r mono">128 ГБ</td><td class="r mono stop"><strong>313</strong><br><span class="dim">1.06 с · не комфортно</span></td><td class="r mono stop"><strong>6</strong><br><span class="dim">5.7 мин · не комфортно</span></td><td class="r mono ok"><strong>73</strong><br><span class="dim">18 с</span></td></tr>
+      <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono">2 270 700 ₽</td><td class="r mono">729 300 ₽</td><td class="r mono">256 ГБ</td><td class="r mono ok"><strong>113</strong><br><span class="dim">0.80 с</span></td><td class="r mono stop"><strong>1</strong><br><span class="dim">11.1 мин · не комфортно</span></td><td class="r mono ok"><strong>22</strong><br><span class="dim">17 с</span></td></tr>
+      <tr><td>EPYC 768 ГБ без карты</td><td class="r mono">835 000 ₽</td><td class="r mono">2 165 000 ₽</td><td class="r mono">768 ГБ</td><td class="r mono ok"><strong>31</strong><br><span class="dim">0.97 с</span></td><td class="r mono stop"><strong>0</strong><br><span class="dim">8.1 мин · не комфортно</span></td><td class="r mono ok"><strong>6</strong><br><span class="dim">21 с</span></td></tr>
     </tbody>
   </table>
 </div>
@@ -865,17 +865,42 @@
       <table>
         <thead><tr><th>Сборка</th><th class="r">Копилотов</th><th class="r">Агентов</th><th class="r">Чатов</th><th>Обменный курс</th></tr></thead>
         <tbody>
-          <tr class="hi"><td><strong>RTX PRO 6000 + хост + Spark + Halo</strong></td><td class="r mono ok"><strong>668</strong></td><td class="r mono ok"><strong>13</strong></td><td class="r mono">56</td><td class="dim">1 агент = 4 чата = 52 копилота</td></tr>
-          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ + хост</strong></td><td class="r mono ok"><strong>980</strong></td><td class="r mono">11</td><td class="r mono ok"><strong>76</strong></td><td class="dim">1 агент = 7 чатов = 87 копилотов</td></tr>
-          <tr><td>RTX PRO 5000 + хост + 2 Spark</td><td class="r mono">574</td><td class="r mono stop">2</td><td class="r mono">12</td><td class="dim">1 агент = 6 чатов = 290 копилотов</td></tr>
-          <tr><td>RTX PRO 6000 + хост</td><td class="r mono">529</td><td class="r mono">11</td><td class="r mono">43</td><td class="dim">1 агент = 4 чата = 47 копилотов</td></tr>
-          <tr><td>4 × DGX Spark в кластере</td><td class="r mono">353</td><td class="r mono stop">4</td><td class="r mono">25</td><td class="dim">1 агент = 6 чатов = 89 копилотов</td></tr>
-          <tr><td>5 × DGX Spark независимыми</td><td class="r mono">442</td><td class="r mono stop">5</td><td class="r mono">31</td><td class="dim">1 агент = 6 чатов = 89 копилотов</td></tr>
-          <tr><td>11 × мини-ПК Strix Halo</td><td class="r mono">558</td><td class="r mono stop">6</td><td class="r mono ok"><strong>73</strong></td><td class="dim">1 агент = 13 чатов = 97 копилотов</td></tr>
-          <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono">138</td><td class="r mono stop">1</td><td class="r mono">22</td><td class="dim">1 агент = 27 чатов = 171 копилот</td></tr>
-          <tr><td>EPYC 768 ГБ без карты</td><td class="r mono">48</td><td class="r mono stop">0</td><td class="r mono">6</td><td class="dim">агент не тянет</td></tr>
+          <tr class="hi"><td><strong>RTX PRO 6000 + хост + Spark + Halo</strong></td><td class="r mono ok"><strong>311</strong></td><td class="r mono ok"><strong>13</strong></td><td class="r mono">56</td><td class="dim">1 агент = 4 чата = 24 копилота</td></tr>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ + хост</strong></td><td class="r mono ok"><strong>499</strong></td><td class="r mono">11</td><td class="r mono ok"><strong>76</strong></td><td class="dim">1 агент = 7 чатов = 45 копилотов</td></tr>
+          <tr><td>RTX PRO 5000 + хост + 2 Spark</td><td class="r mono">261</td><td class="r mono stop">2</td><td class="r mono">12</td><td class="dim">1 агент = 6 чатов = 132 копилота</td></tr>
+          <tr><td>RTX PRO 6000 + хост</td><td class="r mono">244</td><td class="r mono">11</td><td class="r mono">43</td><td class="dim">1 агент = 4 чата = 22 копилота</td></tr>
+          <tr><td>4 × DGX Spark в кластере</td><td class="r mono">155</td><td class="r mono stop">4</td><td class="r mono">25</td><td class="dim">1 агент = 6 чатов = 39 копилотов</td></tr>
+          <tr><td>5 × DGX Spark независимыми</td><td class="r mono">194</td><td class="r mono stop">5</td><td class="r mono">31</td><td class="dim">1 агент = 6 чатов = 39 копилотов</td></tr>
+          <tr><td>11 × мини-ПК Strix Halo</td><td class="r mono">313</td><td class="r mono stop">6</td><td class="r mono ok"><strong>73</strong></td><td class="dim">1 агент = 13 чатов = 54 копилота</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono">113</td><td class="r mono stop">1</td><td class="r mono">22</td><td class="dim">1 агент = 27 чатов = 141 копилот</td></tr>
+          <tr><td>EPYC 768 ГБ без карты</td><td class="r mono">31</td><td class="r mono stop">0</td><td class="r mono">6</td><td class="dim">агент не тянет</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Что означает «число копилотов» и почему оно самое ненадёжное в таблице</h3>
+        <p>Копилот-пользователь здесь — разработчик, которому раз в 30 секунд приходит многострочная подсказка. Формально: запрос читает 100 свежих токенов (остальной контекст берётся из кэша префикса), выдаёт 50 токенов подсказки, комфортным считается ответ за секунду.</p>
+        <p><strong>Число крайне чувствительно к допущениям.</strong> На одном узле DGX Spark, замер 2004,6 / 69,0 т/с:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th class="r">Свежих токенов</th><th class="r">Ответ</th><th class="r">Подсказок в час</th><th class="r">Время</th><th class="r">Человек</th><th>Сценарий</th></tr></thead>
+            <tbody>
+              <tr><td class="r mono">100</td><td class="r mono">20</td><td class="r mono">120</td><td class="r mono">0,34 с</td><td class="r mono ok"><strong>88</strong></td><td class="dim">однострочное дополнение</td></tr>
+              <tr class="hi"><td class="r mono">100</td><td class="r mono">50</td><td class="r mono">120</td><td class="r mono">0,77 с</td><td class="r mono"><strong>39</strong></td><td class="dim">многострочная подсказка — принято в таблице</td></tr>
+              <tr><td class="r mono">100</td><td class="r mono">100</td><td class="r mono">120</td><td class="r mono">1,50 с</td><td class="r mono">20</td><td class="dim">блок кода целиком</td></tr>
+              <tr><td class="r mono">100</td><td class="r mono">50</td><td class="r mono">60</td><td class="r mono">0,77 с</td><td class="r mono">78</td><td class="dim">подсказка раз в минуту</td></tr>
+              <tr><td class="r mono">100</td><td class="r mono">50</td><td class="r mono">300</td><td class="r mono">0,77 с</td><td class="r mono">16</td><td class="dim">подсказка раз в 12 секунд</td></tr>
+              <tr><td class="r mono">2000</td><td class="r mono">50</td><td class="r mono">120</td><td class="r mono">1,72 с</td><td class="r mono stop">17</td><td class="dim"><strong>кэш префикса не работает</strong></td></tr>
+              <tr><td class="r mono">8000</td><td class="r mono">50</td><td class="r mono">120</td><td class="r mono">4,72 с</td><td class="r mono stop">6</td><td class="dim">без кэша, контекст файла 8к</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px"><strong>Разброс пятнадцатикратный</strong> — от 6 до 88 человек на один и тот же узел. Колонка «Копилот» показывает порядок величины, а не обязательство.</p>
+        <p><strong>Важное про природу нагрузки.</strong> У копилота 85–97% времени уходит на <strong>генерацию</strong>, а не на чтение контекста — прямо противоположно агенту, у которого чтение занимает 78–99%. Отсюда следует, что копилот упирается в полосу памяти и компактные узлы годятся для него почти так же, как карты; а длина подсказки влияет на ёмкость сильнее любой характеристики железа — переход с однострочных дополнений на блоки кода режет её вчетверо.</p>
+        <p><strong>Что замерить на пилоте:</strong> сколько подсказок в час реально генерирует разработчик, какой они длины и какова доля попаданий в кэш префикса. Три числа, после которых колонка станет достоверной. Сейчас все три — допущения.</p>
+      </div>
     </div>
 
     <div class="card verdict stop">
@@ -1190,7 +1215,7 @@
           <tr><td>RTX PRO 5000 + хост + 2 Spark<br><span class="dim">2 576 976 ₽</span></td><td class="r mono">82</td><td class="r mono stop">58 <span class="dim">только Spark</span></td><td class="r mono">222</td></tr>
           <tr><td>RTX PRO 6000 + хост<br><span class="dim">1 950 000 ₽</span></td><td class="r mono">77</td><td class="r mono">189</td><td class="r mono">210</td></tr>
           <tr><td>5 × DGX Spark<br><span class="dim">2 917 940 ₽</span></td><td class="r mono">60</td><td class="r mono">145</td><td class="r mono">160</td></tr>
-          <tr><td>4 × DGX Spark в кластере<br><span class="dim">2 334 352 ₽ + сеть</span></td><td class="r mono">48</td><td class="r mono">116</td><td class="r mono">128</td></tr>
+          <tr><td>4 × DGX Spark в кластере<br><span class="dim">2 334 352 ₽ + сеть</span></td><td class="r mono">31</td><td class="r mono">116</td><td class="r mono">128</td></tr>
           <tr><td>3 × Mac Studio M3 Ultra<br><span class="dim">2 270 700 ₽</span></td><td class="r dim">нет замеров</td><td class="r dim">нет замеров</td><td class="r dim">нет замеров</td></tr>
         </tbody>
       </table>
