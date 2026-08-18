@@ -17,6 +17,7 @@ NODE = {
  'pro6000':dict(n='RTX PRO 6000',      c=1_550_000, mem=96,  bw=1792),
  'pro5000':dict(n='RTX PRO 5000',      c=979_800,   mem=72,  bw=1344),
  'rtx4090':dict(n='RTX 4090 48 ГБ',    c=450_000,   mem=48,  bw=1008),
+ 'a100':   dict(n='A100 40 ГБ PCIe',  c=409_400,   mem=40,  bw=1555),   # 356 000 × 1,15; Ampere, без FP4/FP8
  'spark':  dict(n='DGX Spark',         c=583_588,   mem=128, bw=273),
  'halo':   dict(n='мини-ПК Strix Halo',c=263_350,   mem=128, bw=256),  # 229 000 × 1,15 без округления
  'mac':    dict(n='Mac Studio M3 Ultra',c=756_900,  mem=256, bw=819),
@@ -38,7 +39,7 @@ M = {
  'halo':  {'coder':(None,None),  'qwen':(214.3,12.76),'laguna':(353.8,40.00),'gptoss':(None,None)},
 }
 SRC = {('spark','gptoss'):'В'}                    # внешний замер
-PRE_CARD = {'pro6000':8000,'pro5000':6000,'rtx4090':2273,'mac':180,'epyc':250}
+PRE_CARD = {'pro6000':8000,'pro5000':6000,'rtx4090':2273,'a100':3500,'mac':180,'epyc':250}
 KIN = {k:v[3] for k,v in MODEL.items()}
 
 def _sib(k,m,idx):
@@ -74,6 +75,7 @@ def mode(k,m,cfg,tp=1):
 BUILDS = [
  ('RTX PRO 6000 + хост + Spark + Halo',[('pro6000',1,0),('spark',1,0),('halo',1,0)],HOST1),
  ('4 × RTX 4090 48 ГБ + хост',         [('rtx4090',4,1)],                           HOST4),
+ ('4 × A100 40 ГБ + хост',             [('a100',4,1)],                              HOST4),
  ('RTX PRO 5000 + хост + 2 Spark',     [('pro5000',1,0),('spark',2,1)],             HOST1+CABLE),
  ('RTX PRO 6000 + хост',               [('pro6000',1,0)],                           HOST1),
  ('4 × DGX Spark в кластере',          [('spark',4,1)],                             0),   # сеть на 4 узла: цена не подтверждена, в смету не включена
