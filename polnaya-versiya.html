@@ -161,7 +161,7 @@
           </table>
         </div>
         <p style="margin-top:12px"><strong>Чего нет в бюджете вообще.</strong> Доли ставки инженера на эксплуатацию. vLLM, драйверы, обновления моделей, мониторинг — это работа, а не разовая установка. Без неё железо простаивает, и <strong>разница между грамотным и неграмотным стеком на Spark достигает четырёх раз</strong> — см. раздел 14.</p>
-        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 19.</p>
+        <p class="dim">Все рублёвые суммы приведены к безналичному расчёту с НДС и не заменяют коммерческое предложение. Источник каждой цифры — раздел 20.</p>
       </div>
     </div>
 
@@ -1636,8 +1636,75 @@
     </div>
   </section>
 
+
   <section>
-    <h2><span class="n">18</span>Что требует ручного подтверждения</h2>
+    <h2><span class="n">18</span>Итог по A100: четыре варианта, один блокирующий вопрос</h2>
+    <p>A100 разбиралась в нескольких местах документа. Сводка.</p>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Вариант</th><th class="r">Цена сборки</th><th class="r">Память</th><th>Вердикт</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>4 × A100 40 ГБ PCIe + хост</strong></td><td class="r mono ok"><strong>2 282 698 ₽</strong></td><td class="r mono">160 ГБ, PCIe</td><td class="ok"><strong>основной кандидат</strong></td></tr>
+          <tr><td>4 × SXM4 на переходниках + хост</td><td class="r mono">2 075 682 ₽</td><td class="r mono">160 ГБ, PCIe</td><td class="stop"><strong>не брать</strong> — самодельное питание 48 В, NVLink не работает</td></tr>
+          <tr><td>Baseboard HGX Redstone, 4 модуля</td><td class="r dim">не подтверждена</td><td class="r mono">160 ГБ, <strong>NVSwitch</strong></td><td class="dim">запросить КП: единственный вариант с настоящим пулом</td></tr>
+          <tr><td>Шасси HGX, 8 модулей</td><td class="r dim">не подтверждена</td><td class="r mono"><strong>320 ГБ, NVSwitch</strong></td><td class="dim">только если нужен пул за 256 ГБ; 6,5 кВт и 400 тыс. ₽/год</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Основной вариант против рекомендованного</th><th class="r">4 × A100 PCIe</th><th class="r">RTX PRO 6000 + Spark + Halo</th></tr></thead>
+        <tbody>
+          <tr><td>Закупка</td><td class="r mono ok"><strong>2 282 698 ₽</strong></td><td class="r mono">2 796 938 ₽</td></tr>
+          <tr><td>Электричество за три года</td><td class="r mono">265 638 ₽</td><td class="r mono ok"><strong>183 960 ₽</strong></td></tr>
+          <tr class="hi"><td><strong>Итого за три года</strong></td><td class="r mono ok"><strong>2 548 336 ₽</strong></td><td class="r mono">2 980 898 ₽</td></tr>
+          <tr><td>Агентных пользователей</td><td class="r mono ok"><strong>17</strong></td><td class="r mono">13</td></tr>
+          <tr><td>Собеседников в чате</td><td class="r mono ok"><strong>117</strong></td><td class="r mono">56</td></tr>
+          <tr><td>Крупнейший пул памяти</td><td class="r mono">160 ГБ</td><td class="r mono">128 ГБ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim" style="font-size:14px">A100 дешевле на 432 562 ₽ за три года и при этом производительнее по всем режимам. Если бы решение принималось по этой таблице, выбор был бы очевиден.</p>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Но решение принимается не по ней</h3>
+        <p><strong>Блокирующий вопрос один: у Ampere нет FP4 и FP8.</strong> Что это значит по конкретным моделям:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Модель</th><th>Формат поставки</th><th>Пойдёт на A100</th></tr></thead>
+            <tbody>
+              <tr><td>Qwen3.8-27B в GGUF Q4</td><td class="dim">квантование llama.cpp</td><td class="ok"><strong>да</strong>, llama.cpp работает на Ampere</td></tr>
+              <tr><td>Laguna S 2.1 в GGUF Q4</td><td class="dim">то же</td><td class="ok"><strong>да</strong></td></tr>
+              <tr><td>gpt-oss-120b</td><td class="dim">MXFP4</td><td class="stop"><strong>нет</strong> без пересборки в INT4</td></tr>
+              <tr><td>GLM-5.2</td><td class="dim">NVFP4</td><td class="stop"><strong>нет</strong> без пересборки в INT4</td></tr>
+              <tr><td>DeepSeek-V4-Flash</td><td class="dim">FP4+FP8 смешанный</td><td class="stop"><strong>нет</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px">Блокер у́же, чем кажется: две модели из пяти работают штатно. Но именно те, что не работают, — самые крупные и самые интересные, и под них покупается память.</p>
+        <p><strong>Дополнительно, но не блокирует:</strong> карта 2020 года из дата-центра, наработка неизвестна, гарантии нет, HBM2 деградирует, замены при отказе может не быть. Пассивное охлаждение требует серверного корпуса — <strong>у компании серверная есть, так что это перестало быть проблемой.</strong></p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Что делать</h3>
+        <p><strong>Проверка на неделю, стоимость — аренда одной карты.</strong> Взять A100 40 ГБ, поставить целевые модели заказчика и выяснить два числа: существуют ли они в AWQ или GPTQ INT4, и насколько просело качество против привычного кванта.</p>
+        <ul>
+          <li><strong>Ответ положительный</strong> — брать 4 × A100 PCIe. Дешевле, быстрее, больше памяти. Рекомендацию менять.</li>
+          <li><strong>Ответ отрицательный</strong> — A100 отпадает целиком, во всех четырёх вариантах, и остаётся рекомендованная сборка.</li>
+        </ul>
+        <p><strong>Переходники SXM4 не рассматривать ни при каком ответе.</strong> Экономия 9% не стоит самодельной силовой части на полтора киловатта в серверной, тем более что NVLink на них всё равно не работает и преимущества SXM не возникает.</p>
+        <p><strong>Заводское шасси HGX запросить отдельно</strong> — если поставщик назовёт вменяемую цену, это единственная конфигурация в бюджете с настоящим пулом на 320 ГБ. Но там своя цена: 6,5 кВт, 400 тысяч в год на электричество и вопрос свободной мощности в серверной.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">19</span>Что требует ручного подтверждения</h2>
     <div class="grid">
       <div class="card pad">
         <h3>Цены и поставка</h3>
@@ -1694,7 +1761,7 @@
 
 
   <section>
-    <h2><span class="n">19</span>Откуда взято каждое число</h2>
+    <h2><span class="n">20</span>Откуда взято каждое число</h2>
     <p>Каждая величина, на которую опирается решение, с указанием источника и статуса проверки. <span class="pill buy">подтверждено</span> — источник совпал с текстом; <span class="pill mb">исправлено</span> — источник разошёлся, текст выше уже приведён к источнику; <span class="pill no">не проверено</span> — внешнего подтверждения нет.</p>
 
     <h3 style="margin-top:24px">Железо</h3>
