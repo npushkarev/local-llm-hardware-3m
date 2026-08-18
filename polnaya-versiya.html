@@ -854,6 +854,69 @@
 </div>
     <p class="dim" style="font-size:14px">Копилот считается на Qwen3-Coder-30B-A3B (запрос — 100 свежих токенов при попадании в кэш плюс 20 токенов подсказки, разработчик делает 120 подсказок в час), агент и чат — на Laguna S 2.1 (шаг агента 120 000 токенов плюс 200 ответа, 20 шагов в час; сообщение чата 2 000 плюс 500, 30 сообщений в час). Все ячейки считает один генератор <span class="mono">tabl.py</span>, поэтому разделы документа не могут разойтись.</p>
 
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>На скольких человек хватит: либо одно, либо другое, либо смесь</h3>
+        <p>Числа таблицы выше — это ёмкость, <strong>если отдать всю сборку одному режиму</strong>. На практике режимы делят одно железо, поэтому важнее обменный курс между ними.</p>
+      </div>
+    </div>
+
+    <div class="card scroller">
+      <table>
+        <thead><tr><th>Сборка</th><th class="r">Копилотов</th><th class="r">Агентов</th><th class="r">Чатов</th><th>Обменный курс</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>RTX PRO 6000 + хост + Spark + Halo</strong></td><td class="r mono ok"><strong>668</strong></td><td class="r mono ok"><strong>13</strong></td><td class="r mono">56</td><td class="dim">1 агент = 4 чата = 52 копилота</td></tr>
+          <tr class="hi"><td><strong>4 × RTX 4090 48 ГБ + хост</strong></td><td class="r mono ok"><strong>980</strong></td><td class="r mono">11</td><td class="r mono ok"><strong>76</strong></td><td class="dim">1 агент = 7 чатов = 87 копилотов</td></tr>
+          <tr><td>RTX PRO 5000 + хост + 2 Spark</td><td class="r mono">574</td><td class="r mono stop">2</td><td class="r mono">12</td><td class="dim">1 агент = 6 чатов = 290 копилотов</td></tr>
+          <tr><td>RTX PRO 6000 + хост</td><td class="r mono">529</td><td class="r mono">11</td><td class="r mono">43</td><td class="dim">1 агент = 4 чата = 47 копилотов</td></tr>
+          <tr><td>4 × DGX Spark в кластере</td><td class="r mono">353</td><td class="r mono stop">4</td><td class="r mono">25</td><td class="dim">1 агент = 6 чатов = 89 копилотов</td></tr>
+          <tr><td>5 × DGX Spark независимыми</td><td class="r mono">442</td><td class="r mono stop">5</td><td class="r mono">31</td><td class="dim">1 агент = 6 чатов = 89 копилотов</td></tr>
+          <tr><td>11 × мини-ПК Strix Halo</td><td class="r mono">558</td><td class="r mono stop">6</td><td class="r mono ok"><strong>73</strong></td><td class="dim">1 агент = 13 чатов = 97 копилотов</td></tr>
+          <tr><td>3 × Mac Studio M3 Ultra</td><td class="r mono">138</td><td class="r mono stop">1</td><td class="r mono">22</td><td class="dim">1 агент = 27 чатов = 171 копилот</td></tr>
+          <tr><td>EPYC 768 ГБ без карты</td><td class="r mono">48</td><td class="r mono stop">0</td><td class="r mono">6</td><td class="dim">агент не тянет</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card verdict stop">
+      <div class="pad">
+        <h3>Почему разброс такой дикий</h3>
+        <p>Один человек занимает разную долю узла в зависимости от режима. Для рекомендованной сборки:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Узел</th><th class="r">Копилот</th><th class="r">Агент</th><th class="r">Чат</th></tr></thead>
+            <tbody>
+              <tr><td>RTX PRO 6000</td><td class="r mono">0,19% узла</td><td class="r mono ok"><strong>8,9%</strong></td><td class="r mono">2,3%</td></tr>
+              <tr class="hi"><td>DGX Spark</td><td class="r mono">1,13%</td><td class="r mono stop"><strong>101%</strong></td><td class="r mono">16,2%</td></tr>
+              <tr><td>мини-ПК Strix Halo</td><td class="r mono">1,97%</td><td class="r mono stop"><strong>191%</strong></td><td class="r mono">15,1%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px"><strong>Главное число здесь — 101%.</strong> Один агентный пользователь занимает целый DGX Spark и ещё немного сверху. Spark не тянет даже одного человека в агентном режиме непрерывно, а мини-ПК Halo не тянет и половины. На RTX PRO 6000 тот же пользователь занимает 8,9% — отсюда одиннадцать человек на карту.</p>
+        <p>Причина в чтении контекста: агент на каждом шаге прочитывает 120 тысяч токенов, и это упирается в вычислитель, которого у компактных узлов в разы меньше. Копилот читает сто токенов, поэтому его тянет всё.</p>
+      </div>
+    </div>
+
+    <div class="card verdict ok">
+      <div class="pad">
+        <h3>Как это выглядит на живой команде</h3>
+        <p>Отдел из 30 разработчиков: у всех копилот, десять человек одновременно сидят в чате, трое гоняют тяжёлых агентов. По рекомендованной сборке:</p>
+        <div class="scroller" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Что</th><th>Куда</th><th class="r">Загрузка</th></tr></thead>
+            <tbody>
+              <tr><td>3 агента</td><td>RTX PRO 6000</td><td class="r mono">27% карты</td></tr>
+              <tr><td>10 чатов</td><td>RTX PRO 6000</td><td class="r mono">23% карты</td></tr>
+              <tr><td>30 копилотов</td><td>DGX Spark</td><td class="r mono">34% узла</td></tr>
+              <tr><td class="dim">резерв и эксперименты</td><td>мини-ПК Halo</td><td class="r dim">свободен</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px"><strong>Карта загружена наполовину, Spark на треть, Halo свободен.</strong> Сборка за 2 796 588 ₽ закрывает отдел из тридцати человек с запасом примерно вдвое. Упрётся она не в копилот и не в чат, а в число одновременных агентов: тринадцать — это потолок, и он наступает раньше всего остального.</p>
+        <p><strong>Отсюда вопрос, который надо задать заказчику до заказа:</strong> сколько человек будут работать агентами <em>одновременно</em>. Не «сколько сотрудников получат доступ», а именно одновременных агентных сессий — это единственное число, которое определяет, хватит одной карты или нужны две.</p>
+      </div>
+    </div>
+
     <div class="card verdict stop">
       <div class="pad">
         <h3>Что таблица показывает, и чего в ней не видно</h3>

@@ -162,3 +162,38 @@ def html():
                  + ''.join(tds) + '</tr>')
     L += ['    </tbody>','  </table>','</div>']
     return '\n'.join(L)
+
+# ─────────────────── ОБМЕННЫЙ КУРС МЕЖДУ РЕЖИМАМИ ───────────────────
+# Один человек занимает долю узла = запросов_в_час × время_запроса / 3600.
+# Сборка обслуживает либо одних, либо других, либо смесь: доли складываются
+# и не должны превышать единицу на каждый узел.
+
+def load_share(k, m, cfg, tp=1):
+    """Какую долю узла занимает один человек в этом режиме."""
+    t,_,_ = mode(k,m,cfg,tp)
+    return cfg['per_hour'] * t / 3600
+
+def capacity(r):
+    """Для сборки: сколько человек в каждом режиме, если отдать ей всю сборку."""
+    out={}
+    for mk,cfg,m in (('copilot',COPILOT,'coder'),('agent',AGENT,'laguna'),('chat',CHAT,'laguna')):
+        out[mk] = r[(mk,m)][2]
+    return out
+
+if __name__ == '__main__':
+    print('\n\n' + '='*78)
+    print('НА СКОЛЬКИХ ЧЕЛОВЕК ХВАТИТ: либо одно, либо другое, либо смесь')
+    print('='*78)
+    print(f'\n{"Сборка":38}{"копилот":>10}{"агент":>9}{"чат":>8}   обменный курс')
+    for r in ROWS:
+        c = capacity(r)
+        co,ag,ch = c['copilot'], c['agent'], c['chat']
+        kurs = f'1 агент = {ch/ag:.0f} чата = {co/ag:.0f} копилотов' if ag>0.05 else 'агент не тянет'
+        print(f'{r["name"]:38}{co:10.0f}{ag:9.1f}{ch:8.0f}   {kurs}')
+
+    print('\n\nДоля узла на одного человека (рекомендованная сборка, по узлам):')
+    for k,label in (('pro6000','RTX PRO 6000'),('spark','DGX Spark'),('halo','мини-ПК Halo')):
+        co = load_share(k,'coder',COPILOT)*100
+        ag = load_share(k,'laguna',AGENT)*100
+        ch = load_share(k,'laguna',CHAT)*100
+        print(f'  {label:16} копилот {co:6.2f}%   агент {ag:7.1f}%   чат {ch:6.1f}%')
